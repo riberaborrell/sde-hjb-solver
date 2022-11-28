@@ -2,7 +2,7 @@ import functools
 
 import numpy as np
 
-from functions import *
+from sde_hjb_solver.functions import *
 
 class ControlledSDE1D(object):
     '''
@@ -92,8 +92,8 @@ class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         self.target_set = (1, 2)
 
         # running and final costs
-        self.f = lambda x: 1
-        self.g = lambda x: 0
+        self.f = functools.partial(constant, a=1.)
+        self.g = functools.partial(constant, a=0.)
 
     def get_idx_target_set(self):
 
@@ -109,41 +109,60 @@ class DoubleWellCommittor1D(OverdampedLangevinSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1., alpha=1.):
+    def __init__(self, beta=1., alpha=1., epsilon=1e-10):
         super().__init__(beta=beta)
 
         # potential
         self.alpha = alpha
-        #self.potential = lambda x, alpha: alpha * (x**2 - 1)**2
-        self.potential = lambda x: + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
-                                   - 0.6 * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) \
-                                   - 0.7 * np.exp(-0.5*(x-1.8)**2/(0.2)**2)
+        self.potential = functools.partial(double_well, alpha=self.alpha)
+        self.gradient = functools.partial(double_well_gradient, alpha=self.alpha)
+        #self.potential = lambda x: + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
+        #                           - 0.6 * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) \
+        #                           - 0.7 * np.exp(-0.5*(x-1.8)**2/(0.2)**2)
 
         # drift term
-        #self.gradient = lambda x, alpha: 4 * alpha * x * (x**2 - 1)
-        self.gradient = lambda x: + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
-                               - 0.6 * (x + 2) * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) / (0.2)**2 \
-                               - 0.7 * (x - 1.8) * np.exp(-0.5*(x - 1.8)**2/(0.2)**2) / (0.2)**2
+        #self.gradient = lambda x: + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
+        #                       - 0.6 * (x + 2) * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) / (0.2)**2 \
+        #                       - 0.7 * (x - 1.8) * np.exp(-0.5*(x - 1.8)**2/(0.2)**2) / (0.2)**2
 
         self.drift = self.gradient
 
         # domain
-        #self.domain = (-2, 2)
-        self.domain = (-5, 5)
+        self.domain = (-2, 2)
+        #self.domain = (-5, 5)
 
         # target set
-        #self.target_set_a = (-2, -1)
-        #self.target_set_b = (1, 2)
-        self.target_set_a = (3.7, 5)
-        self.target_set_b = (-4.1, -3.7)
+        self.target_set_a = (-2, -1)
+        self.target_set_b = (1, 2)
+        #self.target_set_a = (3.7, 5)
+        #self.target_set_b = (-4.1, -3.7)
 
         # running and final costs
         self.f = lambda x: 0
+        self.epsilon = epsilon
         self.g = lambda x: np.where(
             (x >= self.target_set_b[0]) & (x <= self.target_set_b[1]),
             0,
-            10**6,
+            -np.log(self.epsilon),
         )
+
+    def get_idx_target_set(self):
+
+        # indices of domain_h in tha target set A
+        self.idx_ts_a = np.where(
+            (self.domain_h >= self.target_set_a[0]) & (self.domain_h <= self.target_set_a[1])
+        )[0]
+
+        # indices of domain_h in tha target set B
+        self.idx_ts_b = np.where(
+            (self.domain_h >= self.target_set_b[0]) & (self.domain_h <= self.target_set_b[1])
+        )[0]
+
+        # indices of the discretized domain corresponding to the target set
+        self.idx_ts = np.where(
+            ((self.domain_h >= self.target_set_a[0]) & (self.domain_h <= self.target_set_a[1])) |
+            ((self.domain_h >= self.target_set_b[0]) & (self.domain_h <= self.target_set_b[1]))
+        )[0]
 
 class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
     ''' We aim to compute the MFHT of a process following overdamped langevin

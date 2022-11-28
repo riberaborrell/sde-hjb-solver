@@ -2,8 +2,6 @@ import functools
 
 import numpy as np
 
-FLOAT_TYPES = [float, np.float32, np.float64]
-
 def constant(x, a):
     ''' constant scalar function
     '''

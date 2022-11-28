@@ -28,7 +28,6 @@ def main():
     #sde.compute_mfht()
 
     # compute hjb solution 
-    sol_hjb.start_timer()
     sol_hjb.solve_bvp()
     sol_hjb.compute_value_function()
     sol_hjb.compute_optimal_control()
