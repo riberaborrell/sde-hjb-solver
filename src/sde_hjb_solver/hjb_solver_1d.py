@@ -64,6 +64,8 @@ class SolverHJB1D(object):
 
     get_u_opt_at_x(x)
 
+    get_controlled_potential_and_drift()
+
     write_report(x)
 
     plot_1d_psi(ylim=None)
@@ -75,8 +77,6 @@ class SolverHJB1D(object):
     plot_1d_control(ylim=None)
 
     plot_1d_controlled_drift(ylim=None)
-
-    plot_1d_exp_fht()
 
     '''
 
@@ -173,8 +173,8 @@ class SolverHJB1D(object):
                 sigma = self.sde.diffusion
 
                 A[k, k] = - sigma**2 / h**2 - self.sde.f(x)
-                A[k, k - 1] = sigma**2 / (2 * h**2) + drift / (2 * h)
-                A[k, k + 1] = sigma**2 / (2 * h**2) - drift / (2 * h)
+                A[k, k - 1] = sigma**2 / (2 * h**2) - drift / (2 * h)
+                A[k, k + 1] = sigma**2 / (2 * h**2) + drift / (2 * h)
 
             # impose condition on ∂S
             elif k in idx_ts:
@@ -228,30 +228,6 @@ class SolverHJB1D(object):
                           / (2 * self.sde.h)
         self.u_opt[0] = self.u_opt[1]
         self.u_opt[-1] = self.u_opt[-2]
-
-    def compute_mfht(self):
-        ''' computes the expected first hitting time by finite differences of the quantity
-            of interest psi(x)
-        '''
-        from copy import copy
-
-        l = 0.01
-
-        sde_plus = copy(self.sde)
-        sde_plus.sigma = l
-        sde_plus.f = lambda x: sde_plus.sigma * sde_plus.beta
-        sol_plus = SolverHJB1D(sde_plus, self.h)
-        sol_plus.solve_bvp()
-
-        sde_minus = copy(self.sde)
-        sde_minus.sigma = -l
-        sde_minus.f = lambda x: sde_minus.sigma * sde_minus.beta
-        sol_minus = SolverHJB1D(sde_minus, self.h)
-        sol_minus.solve_bvp()
-
-        partial_psi = (sol_plus.psi - sol_minus.psi) / (2 * l)
-        self.mfht = - partial_psi / self.sde.beta
-
 
     def save(self):
         ''' saves some attributes as arrays into a .npz file

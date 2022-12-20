@@ -110,15 +110,16 @@ def double_well_gradient(x, alpha):
 def skew_double_well_1d(x):
     ''' Skew 1-dimensional double well.
     '''
+    d = 1
     x = np.asarray(x)
 
     # array input 
     if x.ndim == 1:
-        assert x.shape[0] == 1, ''
+        assert x.shape[0] == d, ''
 
     # batch input 
     elif x.ndim == 2:
-        assert x.shape[1] == 1, ''
+        assert x.shape[1] == d, ''
 
     return (x**2 -1)**2 - 0.2*x + 0.3
 
