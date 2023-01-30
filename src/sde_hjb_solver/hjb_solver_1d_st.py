@@ -3,7 +3,6 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sde_hjb_solver.controlled_sde_1d import ControlledSDE1D
 class SolverHJB1D(object):
     ''' This class provides a solver of the following 1d BVP by using a
         finite differences method:
@@ -52,8 +51,6 @@ class SolverHJB1D(object):
 
     compute_optimal_control()
 
-    compute_mfht()
-
     save()
 
     load()
@@ -64,7 +61,7 @@ class SolverHJB1D(object):
 
     get_u_opt_at_x(x)
 
-    get_controlled_potential_and_drift()
+    get_perturbed_potential_and_drift()
 
     write_report(x)
 
@@ -72,11 +69,13 @@ class SolverHJB1D(object):
 
     plot_1d_value_function(ylim=None)
 
-    plot_1d_controlled_potential(ylim=None)
+    plot_1d_perturbed_potential(ylim=None)
 
     plot_1d_control(ylim=None)
 
-    plot_1d_controlled_drift(ylim=None)
+    plot_1d_perturbed_drift(ylim=None)
+
+    plot_1d_mfht(ylim=None)
 
     '''
 
@@ -349,7 +348,7 @@ class SolverHJB1D(object):
         # evaluate optimal control at x
         return self.u_opt[idx] if hasattr(self, 'u_opt') else None
 
-    def get_controlled_potential_and_drift(self):
+    def get_perturbed_potential_and_drift(self):
         ''' computes the potential, bias potential, controlled potential, gradient,
             controlled drift
         '''
@@ -363,11 +362,11 @@ class SolverHJB1D(object):
         # potential, bias potential and tilted potential
         self.V = np.squeeze(self.sde.potential(x))
         self.bias_potential = (sigma**2) * self.value_function
-        self.controlled_potential = self.V + self.bias_potential
+        self.perturbed_potential = self.V + self.bias_potential
 
         # gradient and tilted drift
         self.dV = np.squeeze(self.sde.gradient(x))
-        self.controlled_drift = - self.dV + sigma * self.u_opt
+        self.perturbed_drift = - self.dV + sigma * self.u_opt
 
 
     def write_report(self, x):
@@ -435,15 +434,15 @@ class SolverHJB1D(object):
         ax.plot(self.sde.domain_h, self.value_function)
         plt.show()
 
-    def plot_1d_controlled_potential(self, ylim=None):
+    def plot_1d_perturbed_potential(self, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Controlled potential $(V + V_{bias})(x)$')
+        ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.V)
-        ax.plot(self.sde.domain_h, self.controlled_potential)
+        ax.plot(self.sde.domain_h, self.perturbed_potential)
         plt.show()
 
     def plot_1d_control(self, ylim=None):
@@ -456,15 +455,15 @@ class SolverHJB1D(object):
         ax.plot(self.sde.domain_h, self.u_opt)
         plt.show()
 
-    def plot_1d_controlled_drift(self, ylim=None):
+    def plot_1d_perturbed_drift(self, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Controlled drift $\nabla(V + V_{bias})(x)$')
+        ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
-        self.get_controlled_potential_and_drift()
-        ax.plot(self.sde.domain_h, self.controlled_drift)
+        self.get_perturbed_potential_and_drift()
+        ax.plot(self.sde.domain_h, self.perturbed_drift)
         plt.show()
 
     def plot_1d_mfht(self, ylim=None):

@@ -1,8 +1,8 @@
 import numpy as np
 
-from hjb_solver_1d import SolverHJB1D
-from controlled_sde_1d import *
-from base_parser import get_base_parser
+from sde_hjb_solver.hjb_solver_1d_st import SolverHJB1D
+from sde_hjb_solver.controlled_sde_1d import *
+from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
     parser = get_base_parser()
@@ -17,8 +17,8 @@ def main():
     d = 1
 
     # initialize hjb solver
-    sde = DoubleWellStoppingTime1D(beta=args.beta, alpha=args.alpha_i)
-    #sde = DoubleWellCommittor1D(beta=args.beta, alpha=args.alpha_i)
+    #sde = DoubleWellStoppingTime1D(beta=args.beta, alpha=args.alpha_i)
+    sde = DoubleWellCommittor1D(beta=args.beta, alpha=args.alpha_i)
     #sde = SkewDoubleWellStoppingTime1D(beta=args.beta)
     #sde = BrownianMotionCommittor1D()
 
@@ -42,13 +42,13 @@ def main():
         return
 
     # evaluate in grid
-    sol_hjb.get_controlled_potential_and_drift()
+    sol_hjb.get_perturbed_potential_and_drift()
 
     sol_hjb.plot_1d_psi()
     sol_hjb.plot_1d_value_function()
-    sol_hjb.plot_1d_controlled_potential()#(ylim=(0, 20))
+    sol_hjb.plot_1d_perturbed_potential()#(ylim=(0, 20))
     sol_hjb.plot_1d_control()#(ylim=(-0.15, 20))
-    sol_hjb.plot_1d_controlled_drift()
+    sol_hjb.plot_1d_perturbed_drift()
 
     #sol_hjb.plot_1d_mfht()
 

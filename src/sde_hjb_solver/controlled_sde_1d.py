@@ -9,10 +9,32 @@ class ControlledSDE1D(object):
     '''
     '''
 
-    def __init__(self):
+    def __init__(self, domain):
 
         # dimension
         self.d = 1
+
+        # domain bounds
+        self.domain = domain
+
+    def discretize_domain_1d(self, h):
+        '''
+        '''
+
+        # discretization step
+        self.h = h
+
+        # domain bounds
+        lb, ub = self.domain[0], self.domain[1]
+
+        # discretized domain
+        self.domain_h = np.arange(lb, ub + h, h)
+
+        # number of nodes
+        self.Nh = self.domain_h.shape[0]
+
+        # get node indices corresponding to the target set
+        self.get_idx_target_set()
 
     def set_stopping_time_setting(self, lam=1.):
         '''
@@ -96,25 +118,6 @@ class ControlledSDE1D(object):
             ((self.domain_h >= self.target_set_b[0]) & (self.domain_h <= self.target_set_b[1]))
         )[0]
 
-    def discretize_domain_1d(self, h):
-        '''
-        '''
-
-        # discretization step
-        self.h = h
-
-        # domain bounds
-        lb, ub = self.domain[0], self.domain[1]
-
-        # discretized domain
-        self.domain_h = np.arange(lb, ub + h, h)
-
-        # number of nodes
-        self.Nh = self.domain_h.shape[0]
-
-        # get node indices corresponding to the target set
-        self.get_idx_target_set()
-
     def get_index(self, x):
         '''
         '''
@@ -168,8 +171,8 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1.):
-        super().__init__()
+    def __init__(self, beta=1., domain=None):
+        super().__init__(domain=domain)
 
         # inverse temperature
         self.beta = beta
@@ -181,8 +184,8 @@ class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1., alpha=1., lam=1.0):
-        super().__init__(beta=beta)
+    def __init__(self, beta=1., alpha=1., lam=1.0, domain=None, target_set=None):
+        super().__init__(beta=beta, domain=domain)
 
         # potential
         self.alpha = alpha
@@ -193,10 +196,14 @@ class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        self.domain = (-2, 2)
+        if self.domain is None:
+            self.domain = (-2, 2)
 
         # target set
-        self.target_set = (1, 2)
+        if target_set is not None:
+            self.target_set = target_set
+        else:
+            self.target_set = (1, 2)
 
         # stopping time setting
         self.set_stopping_time_setting(lam=lam)
@@ -206,8 +213,9 @@ class DoubleWellCommittor1D(OverdampedLangevinSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1., alpha=1., epsilon=1e-10):
-        super().__init__(beta=beta)
+    def __init__(self, beta=1., alpha=1., epsilon=1e-10,
+                 domain=None, target_set_a=None, target_set_b=None):
+        super().__init__(beta=beta, domain=domain)
 
         # potential
         self.alpha = alpha
@@ -218,11 +226,19 @@ class DoubleWellCommittor1D(OverdampedLangevinSDE1D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        self.domain = (-2, 2)
+        if self.domain is None:
+            self.domain = (-2, 2)
 
         # target set
-        self.target_set_a = (-2, -1)
-        self.target_set_b = (1, 2)
+        if target_set_a is not None:
+            self.target_set_a = target_set_a
+        else:
+            self.target_set_a = (-2, -1)
+
+        if target_set_b is not None:
+            self.target_set_b = target_set_b
+        else:
+            self.target_set_b = (1, 2)
 
         # committor setting
         self.set_committor_setting(epsilon)
@@ -231,8 +247,8 @@ class FiveWellCommittor1D(OverdampedLangevinSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1., epsilon=1e-10):
-        super().__init__(beta=beta)
+    def __init__(self, beta=1., epsilon=1e-10, domain=None):
+        super().__init__(beta=beta, domain=domain)
 
         # potential
         self.potential = lambda x: + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
@@ -248,7 +264,8 @@ class FiveWellCommittor1D(OverdampedLangevinSDE1D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        self.domain = (-5, 5)
+        if self.domain is None:
+            self.domain = (-5, 5)
 
         # target set
         x1 = -3.9
@@ -267,8 +284,8 @@ class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         dynamics with skew double well potential (see Hartmann2012).
     '''
 
-    def __init__(self, beta=1., lam=1.):
-        super().__init__(beta=beta)
+    def __init__(self, beta=1., lam=1., domain=None, target_set=None):
+        super().__init__(beta=beta, domain=domain)
 
         # potential
         self.potential = skew_double_well_1d
@@ -278,10 +295,14 @@ class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        self.domain = (-2, 2)
+        if self.domain is None:
+            self.domain = (-2, 2)
 
         # target set
-        self.target_set = (-1.1, -1)
+        if target_set is not None:
+            self.target_set = target_set
+        else:
+            self.target_set = (-1.1, -1)
 
         # stopping time setting
         self.set_stopping_time_setting(lam=lam)
@@ -291,19 +312,27 @@ class BrownianMotionCommittor1D(ControlledSDE1D):
     '''
     '''
 
-    def __init__(self, epsilon=1e-10):
-        super().__init__()
+    def __init__(self, epsilon=1e-10, domain=None, target_set_a=None, target_set_b=None):
+        super().__init__(domain=domain)
 
         # drift and diffusion terms
         self.drift = lambda x: 0
         self.diffusion = 1.
 
         # domain
-        self.domain = (-2, 2)
+        if self.domain is None:
+            self.domain = (-2, 2)
 
         # target set
-        self.target_set_a = (-2, -1)
-        self.target_set_b = (1, 2)
+        if self.target_set_a is not None:
+            self.target_set_a = target_set_a
+        else:
+            self.target_set_a = (-2, -1)
+
+        if self.target_set_b is not None:
+            self.target_set_b = target_set_b
+        else:
+            self.target_set_b = (1, 2)
 
         # committor setting
         self.set_committor_setting(epsilon)

@@ -118,6 +118,7 @@ class SolverHJB1DDet(object):
                     sigma = self.sde.diffusion
 
                     # forward time scheme
+                    #TODO: check drift signs
                     A[k, k] = 1 + dt * sigma**2 / (h**2) + dt * self.sde.f(x)
                     A[k, k - 1] = - dt * sigma**2 / (2 * h**2) - dt * drift / (2 * h)
                     A[k, k + 1] = - dt * sigma**2 / (2 * h**2) + dt * drift / (2 * h)
@@ -394,7 +395,7 @@ class SolverHJB1DDet(object):
         # evaluate optimal control at (x, t)
         return self.u_opt[l, k] if hasattr(self, 'u_opt') else None
 
-    def get_controlled_potential_and_drift(self):
+    def get_perturbed_potential_and_drift(self):
         ''' computes the potential, bias potential, controlled potential, gradient,
             controlled drift
         '''
@@ -408,11 +409,11 @@ class SolverHJB1DDet(object):
         # potential, bias potential and tilted potential
         self.V = np.squeeze(self.sde.potential(x))
         self.bias_potential = (sigma**2) * self.value_function
-        self.controlled_potential = self.V + self.bias_potential
+        self.perturbed_potential = self.V + self.bias_potential
 
         # gradient and tilted drift
         self.dV = np.squeeze(self.sde.gradient(x))
-        self.controlled_drift = - self.dV + sigma * self.u_opt
+        self.perturbed_drift = - self.dV + sigma * self.u_opt
 
     def write_report(self, x, t):
         ''' writes the hjb solver parameters and the value of the solution at (x, t)
@@ -528,7 +529,7 @@ class SolverHJB1DDet(object):
         ax.legend()
         plt.show()
 
-    def plot_1d_controlled_potential_at_t(self, t0=0, t1=None, ylim=None):
+    def plot_1d_perturbed_potential_at_t(self, t0=0, t1=None, ylim=None):
 
         # final time as default value
         if t1 is None:
@@ -543,14 +544,14 @@ class SolverHJB1DDet(object):
         label2 = 't = {:2.2f})'.format(t1)
 
         fig, ax = plt.subplots()
-        ax.set_title(r'Controlled potential $(V + V_{bias})(x, t)$')
+        ax.set_title(r'Perturbed potential $(V + V_{bias})(x, t)$')
         ax.set_xlabel('x')
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.V)
-        ax.plot(self.sde.domain_h, self.controlled_potential[l0, :], label=label1)
-        ax.plot(self.sde.domain_h, self.controlled_potential[l1, :], label=label2)
+        ax.plot(self.sde.domain_h, self.perturbed_potential[l0, :], label=label1)
+        ax.plot(self.sde.domain_h, self.perturbed_potential[l1, :], label=label2)
         ax.legend()
         plt.show()
 
@@ -604,5 +605,5 @@ class SolverHJB1DDet(object):
 
         plt.show()
 
-    def plot_1d_controlled_drift_at_t(self, ylim=None):
+    def plot_1d_perturbed_drift_at_t(self, ylim=None):
         pass
