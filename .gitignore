@@ -1,0 +1,26 @@
+# data files
+data/
+
+# config files
+src/sde_hjb_solver/config.py
+
+# notebooks
+notebooks/
+
+# pyenv version file
+.python-version
+
+# virtual environment
+venv/
+
+# egg info files
+*.egg-info
+
+# python compilation files
+*.pyc
+
+# state files
+*.swp
+
+# pycharm idea
+.idea/
