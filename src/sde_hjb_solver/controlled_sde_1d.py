@@ -30,6 +30,9 @@ class ControlledSDE1D(object):
         # discretized domain
         self.domain_h = np.arange(lb, ub + h, h)
 
+        # number of indices per axis
+        self.Nx = self.domain_h.shape[0]
+
         # number of nodes
         self.Nh = self.domain_h.shape[0]
 
@@ -187,6 +190,9 @@ class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
     def __init__(self, beta=1., alpha=1., lam=1.0, domain=None, target_set=None):
         super().__init__(beta=beta, domain=domain)
 
+        # log name
+        self.name = 'doublewell-1d-st__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+
         # potential
         self.alpha = alpha
         self.potential = functools.partial(double_well, alpha=self.alpha)
@@ -216,6 +222,9 @@ class DoubleWellCommittor1D(OverdampedLangevinSDE1D):
     def __init__(self, beta=1., alpha=1., epsilon=1e-10,
                  domain=None, target_set_a=None, target_set_b=None):
         super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'doublewell-1d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
 
         # potential
         self.alpha = alpha
@@ -249,6 +258,10 @@ class FiveWellCommittor1D(OverdampedLangevinSDE1D):
 
     def __init__(self, beta=1., epsilon=1e-10, domain=None):
         super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'fivewell-1d-committor__beta{:.1f}'.format(beta)
+
 
         # potential
         self.potential = lambda x: + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
@@ -287,6 +300,9 @@ class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
     def __init__(self, beta=1., lam=1., domain=None, target_set=None):
         super().__init__(beta=beta, domain=domain)
 
+        # log name
+        self.name = 'skewdoublewell-1d-st__beta{:.1f}'.format(beta)
+
         # potential
         self.potential = skew_double_well_1d
         self.gradient = skew_double_well_gradient_1d
@@ -315,6 +331,9 @@ class BrownianMotionCommittor1D(ControlledSDE1D):
     def __init__(self, epsilon=1e-10, domain=None, target_set_a=None, target_set_b=None):
         super().__init__(domain=domain)
 
+        # log name
+        self.name = 'brownian-1d-committor'.format()
+
         # drift and diffusion terms
         self.drift = lambda x: 0
         self.diffusion = 1.
@@ -324,12 +343,12 @@ class BrownianMotionCommittor1D(ControlledSDE1D):
             self.domain = (-2, 2)
 
         # target set
-        if self.target_set_a is not None:
+        if target_set_a is not None:
             self.target_set_a = target_set_a
         else:
             self.target_set_a = (-2, -1)
 
-        if self.target_set_b is not None:
+        if target_set_b is not None:
             self.target_set_b = target_set_b
         else:
             self.target_set_b = (1, 2)

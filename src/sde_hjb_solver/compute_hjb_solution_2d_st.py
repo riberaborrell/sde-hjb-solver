@@ -17,8 +17,8 @@ def main():
     d = 2
 
     # initialize hjb solver
-    #sde = DoubleWellStoppingTime2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
-    sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
+    sde = DoubleWellStoppingTime2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
+    #sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
 
     # initialize hjb solver
     sol_hjb = SolverHJB2D(sde, h=args.h)
@@ -31,6 +31,8 @@ def main():
     sol_hjb.compute_value_function()
     sol_hjb.compute_optimal_control()
     #sol_hjb.compute_mfht()
+
+    sol_hjb.save()
 
     # report solution
     if args.report:

@@ -1,7 +1,10 @@
+import os
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+from sde_hjb_solver.utils_path import make_dir_path, save_data, load_data
 
 class SolverHJB1D(object):
     ''' This class provides a solver of the following 1d BVP by using a
@@ -104,8 +107,8 @@ class SolverHJB1D(object):
         # discretization step
         self.h = h
 
-        # dir_path
-        #self.dir_path = get_hjb_solution_dir_path(sde.settings_dir_path, h)
+        # rel directory path
+        self.rel_dir_path = os.path.join(sde.name, 'h{:.0e}'.format(h))
 
     def start_timer(self):
         ''' start timer
@@ -231,39 +234,31 @@ class SolverHJB1D(object):
     def save(self):
         ''' saves some attributes as arrays into a .npz file
         '''
-        # create directoreis of the given path if it does not exist
-        if not os.path.isdir(self.dir_path):
-            os.makedirs(self.dir_path)
+        # create data dictionary 
+        data = {
+            'domain_h': self.sde.domain_h,
+            'Nx': self.sde.Nx,
+            'Nh': self.sde.Nh,
+            'psi': self.psi,
+            'value_function': self.value_function,
+            'u_opt': self.u_opt,
+            'ct': self.ct,
+        }
 
         # save arrays in a npz file
-        np.savez(
-            os.path.join(self.dir_path, 'hjb-solution-1d.npz'),
-            domain_h=self.sde.domain_h,
-            Nx=self.sde.Nx,
-            Nh=self.sde.Nh,
-            psi=self.psi,
-            value_function=self.value_function,
-            u_opt=self.u_opt,
-            ct=self.ct,
-        )
+        save_data(data, self.rel_dir_path)
 
     def load(self):
         ''' loads the saved arrays and sets them as attributes back
         '''
+        data = load_data(self.rel_dir_path)
         try:
-            data = np.load(
-                os.path.join(self.dir_path, 'hjb-solution-1d.npz'),
-                allow_pickle=True,
-            )
-            for attr_name in data.files:
+            for attr_name in data.keys():
 
                 # get attribute from data
-                if data[attr_name].ndim == 0:
-                    attr = data[attr_name][()]
-                else:
-                    attr = data[attr_name]
+                attr = data[attr_name]
 
-                # langevin SDE attribute
+                # Controlled SDE attribute
                 if attr_name in ['domain_h', 'Nx', 'Nh']:
 
                     # if attribute exists check if they are the same
@@ -288,7 +283,7 @@ class SolverHJB1D(object):
             return True
 
         except:
-            print('no hjb-solution found with h={:.0e}'.format(self.h))
+            print('Attribute to load already exists and does not match')
             return False
 
     def get_psi_at_x(self, x):

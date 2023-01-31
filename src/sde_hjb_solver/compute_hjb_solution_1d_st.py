@@ -18,9 +18,9 @@ def main():
 
     # initialize hjb solver
     #sde = DoubleWellStoppingTime1D(beta=args.beta, alpha=args.alpha_i)
-    sde = DoubleWellCommittor1D(beta=args.beta, alpha=args.alpha_i)
+    #sde = DoubleWellCommittor1D(beta=args.beta, alpha=args.alpha_i)
     #sde = SkewDoubleWellStoppingTime1D(beta=args.beta)
-    #sde = BrownianMotionCommittor1D()
+    sde = BrownianMotionCommittor1D()
 
     # initialize hjb solver
     sol_hjb = SolverHJB1D(sde, h=args.h)
@@ -32,6 +32,8 @@ def main():
     sol_hjb.compute_value_function()
     sol_hjb.compute_optimal_control()
     #sol_hjb.compute_mfht()
+
+    sol_hjb.save()
 
     # report solution
     if args.report:

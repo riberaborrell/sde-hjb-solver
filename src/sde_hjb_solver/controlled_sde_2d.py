@@ -241,6 +241,9 @@ class DoubleWellStoppingTime2D(OverdampedLangevinSDE2D):
     def __init__(self, beta=1., alpha=np.array([1., 1.]), lam=1.0, domain=None, target_set=None):
         super().__init__(beta=beta, domain=domain)
 
+        # log name
+        self.name = 'doublewell-2d-st__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
+
         # potential
         self.alpha = alpha
         self.potential = functools.partial(double_well, alpha=self.alpha)
@@ -272,6 +275,9 @@ class DoubleWellCommittor2D(OverdampedLangevinSDE2D):
     def __init__(self, beta=1., alpha=np.array([1., 1.]), epsilon=1e-10,
                  domain=None, target_set_a=None, target_set_b=None):
         super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'doublewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
 
         # potential
         self.alpha = alpha
@@ -308,6 +314,9 @@ class BrownianMotionCommittor2D(ControlledSDE2D):
 
     def __init__(self, epsilon=1e-10):
         super().__init__()
+
+        # log name
+        self.name = 'brownian-2d-committor'
 
         # drift and diffusion terms
         self.drift = lambda x: 0

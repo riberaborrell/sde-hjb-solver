@@ -39,8 +39,8 @@ class SolverHJB1DDet(object):
         # final time
         self.T = T
 
-        # dir_path
-        #self.dir_path = get_hjb_solution_dir_path(self.settings_dir_path, self.h)
+        # rel directory path
+        self.rel_dir_path = os.path.join(sde.name, 'h{:.0e}'.format(h))
 
     def start_timer(self):
         ''' start timer
@@ -308,51 +308,60 @@ class SolverHJB1DDet(object):
     def save(self):
         ''' saves some attributes as arrays into a .npz file
         '''
-        # create directoreis of the given path if it does not exist
-        if not os.path.isdir(self.dir_path):
-            os.makedirs(self.dir_path)
+        # create data dictionary 
+        data = {
+            'h': self.h,
+            #'domain_h': self.sde.domain_h,
+            'Nx': self.sde.Nx,
+            'Nh': self.sde.Nh,
+            'x': self.x,
+            'T': self.T,
+            'dt': self.dt,
+            'K': self.K,
+            'psi_i': self.psi_i,
+            'u_opt_i': self.u_opt_i,
+            'ct': self.ct,
+        }
 
         # save arrays in a npz file
-        np.savez(
-            os.path.join(self.dir_path, 'hjb-solution.npz'),
-            h=self.h,
-            Nh=self.Nh,
-            x=self.x,
-            T=self.T,
-            dt=self.dt,
-            K=self.K,
-            psi_i=self.psi_i,
-            u_opt_i=self.u_opt_i,
-            ct=self.ct,
-        )
+        save_data(data, self.rel_dir_path)
 
     def load(self):
         ''' loads the saved arrays and sets them as attributes back
         '''
+        data = load_data(self.rel_dir_path)
         try:
-            data = np.load(
-                os.path.join(self.dir_path, 'hjb-solution.npz'),
-                allow_pickle=True,
-            )
-            for attr_name in data.files:
+            for attr_name in data.keys():
 
                 # get attribute from data
-                if data[attr_name].ndim == 0:
-                    attr = data[attr_name][()]
-                else:
-                    attr = data[attr_name]
+                attr = data[attr_name]
 
-                # if attribute exists check if they are the same
-                if hasattr(self, attr_name):
-                    assert getattr(self, attr_name) == attr
+                # Controlled SDE attribute
+                if attr_name in ['domain_h', 'Nx', 'Nh']:
 
-                # if attribute does not exist save attribute
+                    # if attribute exists check if they are the same
+                    if hasattr(self.sde, attr_name):
+                        assert getattr(self.sde, attr_name) == attr
+
+                    # if attribute does not exist save attribute
+                    else:
+                        setattr(self.sde, attr_name, attr)
+
+                # hjb solver attribute
                 else:
-                    setattr(self, attr_name, attr)
+
+                    # if attribute exists check if they are the same
+                    if hasattr(self, attr_name):
+                        assert getattr(self, attr_name) == attr
+
+                    # if attribute does not exist save attribute
+                    else:
+                        setattr(self, attr_name, attr)
+
             return True
 
         except:
-            print('no hjb-solution found with h={:.0e}'.format(self.h))
+            print('Attribute to load already exists and does not match')
             return False
 
     def get_time_index(self, t):
