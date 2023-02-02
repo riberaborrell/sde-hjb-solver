@@ -236,6 +236,7 @@ class SolverHJB1D(object):
         '''
         # create data dictionary 
         data = {
+            'h': self.sde.h,
             'domain_h': self.sde.domain_h,
             'Nx': self.sde.Nx,
             'Nh': self.sde.Nh,
@@ -259,7 +260,7 @@ class SolverHJB1D(object):
                 attr = data[attr_name]
 
                 # Controlled SDE attribute
-                if attr_name in ['domain_h', 'Nx', 'Nh']:
+                if attr_name in ['h', 'domain_h', 'Nx', 'Nh']:
 
                     # if attribute exists check if they are the same
                     if hasattr(self.sde, attr_name):
