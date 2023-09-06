@@ -28,7 +28,7 @@ class ControlledSDE1D(object):
         lb, ub = self.domain[0], self.domain[1]
 
         # discretized domain
-        self.domain_h = np.arange(lb, ub + h, h)
+        self.domain_h = np.around(np.arange(lb, ub + h, h), decimals=3)
 
         # number of indices per axis
         self.Nx = self.domain_h.shape[0]
@@ -37,7 +37,7 @@ class ControlledSDE1D(object):
         self.Nh = self.domain_h.shape[0]
 
         # get node indices corresponding to the target set
-        self.get_idx_target_set()
+        self.get_target_set_idx()
 
     def set_stopping_time_setting(self, lam=1.):
         '''
@@ -49,13 +49,13 @@ class ControlledSDE1D(object):
         self.g = functools.partial(constant, a=0.)
 
         # target set indices
-        self.get_idx_target_set = self.get_idx_target_set_stopping_time
+        self.get_target_set_idx = self.get_target_set_idx_stopping_time
 
     def compute_mfht(self):
         ''' estimates the expected first hitting time by finite differences of the quantity
             of interest psi(x)
         '''
-        from sde_hjb_solver.hjb_solver_1d import SolverHJB1D
+        from sde_hjb_solver.hjb_solver_1d_st import SolverHJB1D
         from copy import copy
 
         delta = 0.001
@@ -86,57 +86,59 @@ class ControlledSDE1D(object):
         )
 
         # target set indices
-        self.get_idx_target_set = self.get_idx_target_set_committor
+        self.get_target_set_idx = self.get_target_set_idx_committor
 
-    def get_idx_target_set(self):
+    def get_target_set_idx(self):
         raise NameError('Method not defined in subclass')
 
-    def get_idx_target_set_stopping_time(self):
+    def get_target_set_idx_stopping_time(self):
         '''
         '''
         # target set lower and upper bound
         target_set_lb, target_set_ub = self.target_set[0], self.target_set[1]
 
-        # indices of the discretized domain corresponding to the target set
-        self.idx_ts = np.where(
-            (self.domain_h >= target_set_lb) & (self.domain_h <= target_set_ub)
-        )[0]
 
-    def get_idx_target_set_committor(self):
+        # indices of the discretized domain corresponding to the target set
+        is_in_target_set = (self.domain_h >= target_set_lb) & (self.domain_h <= target_set_ub)
+        self.ts_idx = np.where(is_in_target_set)[0]
+
+    def get_target_set_idx_committor(self):
         '''
         '''
         # indices of domain_h in tha target set A
-        self.idx_ts_a = np.where(
+        self.ts_a_idx = np.where(
             (self.domain_h >= self.target_set_a[0]) & (self.domain_h <= self.target_set_a[1])
         )[0]
 
         # indices of domain_h in tha target set B
-        self.idx_ts_b = np.where(
+        self.ts_b_idx = np.where(
             (self.domain_h >= self.target_set_b[0]) & (self.domain_h <= self.target_set_b[1])
         )[0]
 
         # indices of the discretized domain corresponding to the target set
-        self.idx_ts = np.where(
+        self.ts_idx = np.where(
             ((self.domain_h >= self.target_set_a[0]) & (self.domain_h <= self.target_set_a[1])) |
             ((self.domain_h >= self.target_set_b[0]) & (self.domain_h <= self.target_set_b[1]))
         )[0]
 
-    def get_index(self, x):
+    def get_idx(self, x):
+        ''' get index of the grid point which approximates x
         '''
-        '''
+        # array convertion
         x = np.asarray(x)
-        is_scalar = False
 
+        # scalar input
         if x.ndim == 0:
             is_scalar = True
             x = x[np.newaxis]
+        else:
+            is_scalar = False
 
         if x.ndim != 1:
             raise ValueError('x array dimension must be one')
 
-        idx = np.floor((
-            np.clip(x, self.domain[0], self.domain[1] - 2 * self.h) + self.domain[1]
-        ) / self.h).astype(int)
+        idx = self.get_idx_truncate(x)
+        #idx = self.get_idx_min(x)
 
         if is_scalar:
             return np.squeeze(idx)
@@ -144,6 +146,14 @@ class ControlledSDE1D(object):
             return idx
         else:
             return tuple(idx)
+
+    def get_idx_truncate(self, x):
+        x = np.clip(x, self.domain[0], self.domain[1])
+        idx = np.floor((x - self.domain[0]) / self.h).astype(int)
+        return idx
+
+    def get_idx_min(self, x):
+        return np.argmin(np.abs(self.domain_h - x), axis=1)
 
     def plot_1d_potential(self, ylim=None):
         fig, ax = plt.subplots()
@@ -176,6 +186,9 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
 
     def __init__(self, beta=1., domain=None):
         super().__init__(domain=domain)
+
+        # overdamped langevin flag
+        self.is_overdamped_langevin = True
 
         # inverse temperature
         self.beta = beta

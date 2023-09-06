@@ -6,7 +6,7 @@ import numpy as np
 import scipy.sparse as sparse
 import scipy.sparse.linalg as linalg
 
-from sde_hjb_solver.utils_path import make_dir_path, save_data, load_data
+from sde_hjb_solver.utils_path import save_data, load_data
 
 class SolverHJB2D(object):
     ''' This class provides a solver of the following 2d BVP by using a
@@ -36,13 +36,11 @@ class SolverHJB2D(object):
         value function of the HJB equation
     u_opt: array
         optimal control of the HJB equation
-    mfht: array
-       mean first hitting time
 
 
     Methods
     -------
-    __init__(sde, h)
+    __init__(sde, h, load)
 
     start_timer()
 
@@ -61,8 +59,6 @@ class SolverHJB2D(object):
     compute_value_function()
 
     compute_optimal_control()
-
-    compute_mfht()
 
     save()
 
@@ -90,7 +86,7 @@ class SolverHJB2D(object):
 
     '''
 
-    def __init__(self, sde, h):
+    def __init__(self, sde, h, load=False):
         ''' init method
 
         Parameters
@@ -99,6 +95,8 @@ class SolverHJB2D(object):
             overdamped langevin sde object
         h: float
             step size
+        load: bool
+            load solution
 
         Raises
         ------
@@ -117,6 +115,9 @@ class SolverHJB2D(object):
 
         # rel directory path
         self.rel_dir_path = os.path.join(sde.name, 'h{:.0e}'.format(h))
+
+        if load:
+            self.load()
 
     def start_timer(self):
         ''' start timer
@@ -219,17 +220,17 @@ class SolverHJB2D(object):
         if idx[i] == 0:
             k_left = None
         else:
-            idx_left = list(idx)
-            idx_left[i] = idx[i] - 1
-            k_left = self.get_flatten_index(tuple(idx_left))
+            left_idx = list(idx)
+            left_idx[i] = idx[i] - 1
+            k_left = self.get_flatten_index(tuple(left_idx))
 
         # find flatten index of right neighbour wrt the i axis
         if idx[i] == self.sde.Nx[i] - 1:
             k_right = None
         else:
-            idx_right = list(idx)
-            idx_right[i] = idx[i] + 1
-            k_right = self.get_flatten_index(tuple(idx_right))
+            right_idx = list(idx)
+            right_idx[i] = idx[i] + 1
+            k_right = self.get_flatten_index(tuple(right_idx))
 
         return (k_left, k_right)
 
@@ -261,7 +262,7 @@ class SolverHJB2D(object):
             x = self.get_x(k)
 
             # assemble matrix A and vector b on S
-            if k not in self.sde.idx_ts and k not in self.sde.idx_boundary:
+            if k not in self.sde.ts_idx and k not in self.sde.boundary_idx:
 
                 # drift and diffusion at x
                 drift = self.sde.drift(x)
@@ -280,15 +281,15 @@ class SolverHJB2D(object):
                 A[k, k_right] = sigma**2 / (2 * h**2) + drift[1] / (2 * h)
 
             # impose condition on ∂S
-            elif k in self.sde.idx_ts and not k in self.sde.idx_boundary:
+            elif k in self.sde.ts_idx and not k in self.sde.boundary_idx:
                 A[k, k] = 1
                 b[k] = np.exp(- self.sde.g(x))
 
             # stability condition on the boundary: Psi should be flat
-            elif k in self.sde.idx_boundary:
+            elif k in self.sde.boundary_idx:
                 neighbour_counter = 0
 
-                if k in self.sde.idx_boundary_x:
+                if k in self.sde.boundary_x_idx:
 
                     # add neighbour
                     k_left, k_right = self.get_flatten_idx_from_axis_neighbours(idx, i=0)
@@ -300,7 +301,7 @@ class SolverHJB2D(object):
                     # update counter
                     neighbour_counter += 1
 
-                if k in self.sde.idx_boundary_y:
+                if k in self.sde.boundary_y_idx:
 
                     # add neighbour
                     k_left, k_right = self.get_flatten_idx_from_axis_neighbours(idx, i=1)
@@ -345,31 +346,31 @@ class SolverHJB2D(object):
         for i in range(self.sde.d):
 
             # idx value f type
-            idx_value_f_k_plus = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1])]
-            idx_value_f_k_minus = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1])]
+            value_f_k_plus_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1])]
+            value_f_k_minus_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1])]
 
             # idx u type
-            idx_u_k = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
-            idx_u_0 = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
-            idx_u_1 = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
-            idx_u_N_minus = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
-            idx_u_N = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
+            u_k_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
+            u_0_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
+            u_1_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
+            u_N_minus_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
+            u_N_idx = [slice(self.sde.Nx[0]), slice(self.sde.Nx[1]), i]
 
-            idx_value_f_k_plus[i] = slice(2, self.sde.Nx[i])
-            idx_value_f_k_minus[i] = slice(0, self.sde.Nx[i] - 2)
-            idx_u_k[i] = slice(1, self.sde.Nx[i] - 1)
-            idx_u_0[i] = 0
-            idx_u_1[i] = 1
-            idx_u_N_minus[i] = self.sde.Nx[i] - 2
-            idx_u_N[i] = self.sde.Nx[i] - 1
+            value_f_k_plus_idx[i] = slice(2, self.sde.Nx[i])
+            value_f_k_minus_idx[i] = slice(0, self.sde.Nx[i] - 2)
+            u_k_idx[i] = slice(1, self.sde.Nx[i] - 1)
+            u_0_idx[i] = 0
+            u_1_idx[i] = 1
+            u_N_minus_idx[i] = self.sde.Nx[i] - 2
+            u_N_idx[i] = self.sde.Nx[i] - 1
 
             # generalized central difference
-            self.u_opt[tuple(idx_u_k)] = - sigma *(
-                self.value_function[tuple(idx_value_f_k_plus)]
-              - self.value_function[tuple(idx_value_f_k_minus)]
+            self.u_opt[tuple(u_k_idx)] = - sigma *(
+                self.value_function[tuple(value_f_k_plus_idx)]
+              - self.value_function[tuple(value_f_k_minus_idx)]
             ) / (2 * self.sde.h)
-            self.u_opt[tuple(idx_u_0)] = self.u_opt[tuple(idx_u_1)]
-            self.u_opt[tuple(idx_u_N)] = self.u_opt[tuple(idx_u_N_minus)]
+            self.u_opt[tuple(u_0_idx)] = self.u_opt[tuple(u_1_idx)]
+            self.u_opt[tuple(u_N_idx)] = self.u_opt[tuple(u_N_minus_idx)]
 
 
     def save(self):
@@ -386,7 +387,6 @@ class SolverHJB2D(object):
             'u_opt': self.u_opt,
             'ct': self.ct,
         }
-
         # save arrays in a npz file
         save_data(data, self.rel_dir_path)
 
@@ -443,7 +443,7 @@ class SolverHJB2D(object):
             psi at x
         '''
         # get index of x
-        idx = self.sde.get_index(x)
+        idx = self.sde.get_idx(x)
 
         # evaluate psi at x
         return self.psi[idx] if hasattr(self, 'psi') else None
@@ -462,7 +462,7 @@ class SolverHJB2D(object):
             value function at x
         '''
         # get index of x
-        idx = self.sde.get_index(x)
+        idx = self.sde.get_idx(x)
 
         # evaluate value function at x
         return self.value_function[idx] if hasattr(self, 'value_function') else None
@@ -481,7 +481,7 @@ class SolverHJB2D(object):
             optimal control at x
         '''
         # get index of x
-        idx = self.sde.get_index(x)
+        idx = self.sde.get_idx(x)
 
         # evaluate optimal control at x
         return self.u_opt[idx] if hasattr(self, 'u_opt') else None
@@ -557,8 +557,8 @@ class SolverHJB2D(object):
         ax.set_title(r'Estimation of $\Psi(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(self.sde.domain[0])
+        ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
@@ -578,8 +578,8 @@ class SolverHJB2D(object):
         ax.set_title(r'Estimation of $\Phi(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(self.sde.domain[0])
+        ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
@@ -599,8 +599,8 @@ class SolverHJB2D(object):
         ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(self.sde.domain[0])
+        ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
@@ -622,8 +622,8 @@ class SolverHJB2D(object):
         ax.set_title(r'Optimal control $u^*(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(self.sde.domain[0])
+        ax.set_ylim(self.sde.domain[1])
 
         X = self.sde.domain_h[:, :, 0]
         Y = self.sde.domain_h[:, :, 1]
@@ -660,20 +660,3 @@ class SolverHJB2D(object):
 
         plt.show()
 
-    """
-    def plot_2d_perturbed_drift(self):
-        fig, ax = plt.subplots()
-        ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
-        self.get_perturbed_potential_and_drift()
-        plt.show()
-    """
-
-    def plot_1d_mfht(self, ylim=None):
-        fig, ax = plt.subplots()
-        ax.set_title(r'Estimation of $\mathbb{E}^x[\tau]$')
-        ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
-        ax.plot(self.sde.domain_h, self.mfht)
-        plt.show()

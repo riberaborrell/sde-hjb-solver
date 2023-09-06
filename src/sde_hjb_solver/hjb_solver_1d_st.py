@@ -4,7 +4,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sde_hjb_solver.utils_path import make_dir_path, save_data, load_data
+from sde_hjb_solver.utils_path import save_data, load_data
 
 class SolverHJB1D(object):
     ''' This class provides a solver of the following 1d BVP by using a
@@ -20,6 +20,8 @@ class SolverHJB1D(object):
     ----------
     sde: ControlledSDE object
         controlled sde object
+    h: float
+        step size
     ct_initial: float
         initial computational time
     ct_time: float
@@ -82,7 +84,7 @@ class SolverHJB1D(object):
 
     '''
 
-    def __init__(self, sde, h):
+    def __init__(self, sde, h, load=False):
         ''' init method
 
         Parameters
@@ -91,6 +93,8 @@ class SolverHJB1D(object):
             overdamped langevin sde object
         h: float
             step size
+        load: bool
+            load solution
 
         Raises
         ------
@@ -109,6 +113,9 @@ class SolverHJB1D(object):
 
         # rel directory path
         self.rel_dir_path = os.path.join(sde.name, 'h{:.0e}'.format(h))
+
+        if load:
+            self.load()
 
     def start_timer(self):
         ''' start timer
@@ -157,10 +164,10 @@ class SolverHJB1D(object):
         b = np.zeros(self.sde.Nh)
 
         # nodes in boundary
-        idx_boundary = np.array([0, self.sde.Nh - 1])
+        boundary_idx = np.array([0, self.sde.Nh - 1])
 
         # nodes in target set
-        idx_ts = self.sde.idx_ts
+        ts_idx = self.sde.ts_idx
 
         for k in np.arange(self.sde.Nh):
 
@@ -168,7 +175,7 @@ class SolverHJB1D(object):
             x = self.get_x(k)
 
             # assemble matrix A and vector b on S
-            if k not in idx_ts and k not in idx_boundary:
+            if k not in ts_idx and k not in boundary_idx:
 
                 # drift and diffusion at x
                 drift = self.sde.drift(x)
@@ -179,21 +186,25 @@ class SolverHJB1D(object):
                 A[k, k + 1] = sigma**2 / (2 * h**2) + drift / (2 * h)
 
             # impose condition on ∂S
-            elif k in idx_ts:
+            elif k in ts_idx:
                 A[k, k] = 1
                 b[k] = np.exp(- self.sde.g(x))
 
             # stability condition on the boundary: Psi should be flat
-            elif k in idx_boundary:
+            elif k in boundary_idx:
                 if k == 0:
                     # Psi_0 = Psi_1
-                    A[0, 0] = 1
-                    A[0, 1] = -1
+                    #A[0, 0] = 1
+                    #A[0, 1] = -1
+                    A[k, k] = 1
+                    A[k, k+1] = -1
 
                 if k == self.sde.Nh - 1:
-                    # psi_{Nh-1} = Psi_N)
-                    A[-1, -1] = 1
-                    A[-1, -2] = -1
+                    # psi_{Nh-1} = Psi_Nh
+                    #A[-1, -1] = 1
+                    #A[-1, -2] = -1
+                    A[k, k] = 1
+                    A[k, k - 1] = -1
 
         # solve linear system and save
         self.psi = np.linalg.solve(A, b)
@@ -245,6 +256,8 @@ class SolverHJB1D(object):
             'u_opt': self.u_opt,
             'ct': self.ct,
         }
+        if hasattr(self.sde, 'mfht'):
+            data['mfht'] = self.sde.mfht
 
         # save arrays in a npz file
         save_data(data, self.rel_dir_path)
@@ -301,7 +314,7 @@ class SolverHJB1D(object):
             psi at x
         '''
         # get index of x
-        idx = self.sde.get_index(x)
+        idx = self.sde.get_idx(x)
 
         # evaluate psi at x
         return self.psi[idx] if hasattr(self, 'psi') else None
@@ -320,7 +333,7 @@ class SolverHJB1D(object):
             value function at x
         '''
         # get index of x
-        idx = self.sde.get_index(x)
+        idx = self.sde.get_idx(x)
 
         # evaluate value function at x
         return self.value_function[idx] if hasattr(self, 'value_function') else None
@@ -339,7 +352,7 @@ class SolverHJB1D(object):
             optimal control at x
         '''
         # get index of x
-        idx = self.sde.get_index(x)
+        idx = self.sde.get_idx(x)
 
         # evaluate optimal control at x
         return self.u_opt[idx] if hasattr(self, 'u_opt') else None
@@ -417,7 +430,7 @@ class SolverHJB1D(object):
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ax.plot(self.sde.domain_h, self.psi)
+        ax.plot(self.sde.domain_h, self.psi, lw=2.5)
         plt.show()
 
     def plot_1d_value_function(self, ylim=None):
@@ -427,7 +440,7 @@ class SolverHJB1D(object):
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ax.plot(self.sde.domain_h, self.value_function)
+        ax.plot(self.sde.domain_h, self.value_function, lw=2.5)
         plt.show()
 
     def plot_1d_perturbed_potential(self, ylim=None):
@@ -437,8 +450,8 @@ class SolverHJB1D(object):
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ax.plot(self.sde.domain_h, self.V)
-        ax.plot(self.sde.domain_h, self.perturbed_potential)
+        ax.plot(self.sde.domain_h, self.V, lw=2.5)
+        ax.plot(self.sde.domain_h, self.perturbed_potential, lw=2.5)
         plt.show()
 
     def plot_1d_control(self, ylim=None):
@@ -448,7 +461,7 @@ class SolverHJB1D(object):
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ax.plot(self.sde.domain_h, self.u_opt)
+        ax.plot(self.sde.domain_h, self.u_opt, lw=2.5)
         plt.show()
 
     def plot_1d_perturbed_drift(self, ylim=None):
@@ -459,7 +472,7 @@ class SolverHJB1D(object):
         if ylim is not None:
             ax.set_ylim(ylim)
         self.get_perturbed_potential_and_drift()
-        ax.plot(self.sde.domain_h, self.perturbed_drift)
+        ax.plot(self.sde.domain_h, self.perturbed_drift, lw=2.5)
         plt.show()
 
     def plot_1d_mfht(self, ylim=None):
@@ -469,5 +482,5 @@ class SolverHJB1D(object):
         ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
-        ax.plot(self.sde.domain_h, self.mfht)
+        ax.plot(self.sde.domain_h, self.mfht, lw=2.5)
         plt.show()

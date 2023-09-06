@@ -6,7 +6,7 @@ from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
     parser = get_base_parser()
-    parser.description = 'Computes the numerical solution of the 1d HJB equation associated to' \
+    parser.description = 'Computes the numerical solution of the 2d HJB equation associated to' \
                          'the overdamped Langevin SDE'
     return parser
 
@@ -19,20 +19,18 @@ def main():
     # initialize hjb solver
     sde = DoubleWellStoppingTime2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
     #sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
+    #sde = TripleWellCommittor2D(beta=args.beta)
 
     # initialize hjb solver
-    sol_hjb = SolverHJB2D(sde, h=args.h)
-
-    #sde.compute_mfht()
-    sde.discretize_domain_2d(sol_hjb.h)
+    sol_hjb = SolverHJB2D(sde, h=args.h, load=args.load)
 
     # compute hjb solution 
-    sol_hjb.solve_bvp()
-    sol_hjb.compute_value_function()
-    sol_hjb.compute_optimal_control()
-    #sol_hjb.compute_mfht()
-
-    sol_hjb.save()
+    if not args.load:
+        sol_hjb.solve_bvp()
+        sol_hjb.compute_value_function()
+        sol_hjb.compute_optimal_control()
+        sol_hjb.sde.compute_mfht()
+        sol_hjb.save()
 
     # report solution
     if args.report:
@@ -45,15 +43,15 @@ def main():
     sde.plot_2d_potential()
 
     # evaluate in grid
-    sol_hjb.get_perturbed_potential_and_drift()
+    if sol_hjb.sde.is_overdamped_langevin:
+        sol_hjb.get_perturbed_potential_and_drift()
 
     sol_hjb.plot_2d_psi()
     sol_hjb.plot_2d_value_function()
-    sol_hjb.plot_2d_perturbed_potential()#(ylim=(0, 20))
-    sol_hjb.plot_2d_control()#(ylim=(-0.15, 20))
-    #sol_hjb.plot_2d_perturbed_drift()
+    sol_hjb.plot_2d_control()
 
-    #sol_hjb.plot_1d_mfht()
+    if sol_hjb.sde.is_overdamped_langevin:
+        sol_hjb.plot_2d_perturbed_potential()
 
 
 if __name__ == "__main__":

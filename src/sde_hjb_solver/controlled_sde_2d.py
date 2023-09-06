@@ -48,19 +48,19 @@ class ControlledSDE2D(object):
         is_in_boundary_x = ((x[:, 0] == x_lb) | (x[:, 0] == x_ub))
         is_in_boundary_y = ((x[:, 1] == y_lb) | (x[:, 1] == y_ub))
 
-        self.idx_boundary_x = np.where(is_in_boundary_x == True)[0]
-        self.idx_boundary_y = np.where(is_in_boundary_y == True)[0]
-        self.idx_boundary = np.where(
+        self.boundary_x_idx = np.where(is_in_boundary_x == True)[0]
+        self.boundary_y_idx = np.where(is_in_boundary_y == True)[0]
+        self.boundary_idx = np.where(
             (is_in_boundary_x == True) |
             (is_in_boundary_y == True)
         )[0]
-        self.idx_corner = np.where(
+        self.corner_idx = np.where(
             (is_in_boundary_x == True) &
             (is_in_boundary_y == True)
         )[0]
 
         # get node indices corresponding to the target set
-        self.get_idx_target_set()
+        self.get_target_set_idx()
 
     def set_stopping_time_setting(self, lam=1.):
         '''
@@ -72,30 +72,7 @@ class ControlledSDE2D(object):
         self.g = functools.partial(constant, a=0.)
 
         # target set indices
-        self.get_idx_target_set = self.get_idx_target_set_stopping_time
-
-    """
-    def compute_mfht(self):
-        ''' estimates the expected first hitting time by finite differences of the quantity
-            of interest psi(x)
-        '''
-        from sde_hjb_solver.hjb_solver_1d import SolverHJB1D
-        from copy import copy
-
-        delta = 0.001
-
-        sde_plus = copy(self)
-        sde_plus.set_stopping_time_setting(lam=delta)
-        sol_plus = SolverHJB1D(sde_plus, self.h)
-        sol_plus.solve_bvp()
-
-        sde_minus = copy(self)
-        sde_minus.set_stopping_time_setting(lam=-delta)
-        sol_minus = SolverHJB1D(sde_minus, self.h)
-        sol_minus.solve_bvp()
-
-        self.mfht = - (sol_plus.psi - sol_minus.psi) / (2 * delta)
-    """
+        self.get_target_set_idx = self.get_target_set_idx_stopping_time
 
     def set_committor_setting(self, epsilon=1e-10):
         '''
@@ -112,13 +89,13 @@ class ControlledSDE2D(object):
         )[0]
 
         # target set indices
-        self.get_idx_target_set = self.get_idx_target_set_committor
+        self.get_target_set_idx = self.get_target_set_idx_committor
 
 
-    def get_idx_target_set(self):
+    def get_target_set_idx(self):
         raise NameError('Method not defined in subclass')
 
-    def get_idx_target_set_stopping_time(self):
+    def get_target_set_idx_stopping_time(self):
         '''
         '''
         # flatten domain_h
@@ -131,10 +108,10 @@ class ControlledSDE2D(object):
         ).all(axis=1).reshape(self.Nh, 1)
 
         # get index
-        self.idx_ts = np.where(is_in_target_set == True)[0]
+        self.ts_idx = np.where(is_in_target_set == True)[0]
 
 
-    def get_idx_target_set_committor(self):
+    def get_target_set_idx_committor(self):
         '''
         '''
 
@@ -154,13 +131,13 @@ class ControlledSDE2D(object):
         ).all(axis=1).reshape(self.Nh, 1)
 
         # indices of domain_h in tha target set A
-        self.idx_ts_a = np.where(self.is_in_target_set_a == True)[0]
-        self.idx_ts_b = np.where(self.is_in_target_set_b == True)[0]
-        self.idx_ts = np.where(
+        self.ts_a_idx = np.where(self.is_in_target_set_a == True)[0]
+        self.ts_b_idx = np.where(self.is_in_target_set_b == True)[0]
+        self.ts_idx = np.where(
             (self.is_in_target_set_a == True) | (self.is_in_target_set_b == True)
         )[0]
 
-    def get_index(self, x):
+    def get_idx(self, x):
         '''
         '''
         x = np.asarray(x)
@@ -189,8 +166,8 @@ class ControlledSDE2D(object):
         ax.set_title(r'Potential $V(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
+        ax.set_xlim(self.domain[0])
+        ax.set_ylim(self.domain[1])
 
         # flat domain
         x = self.domain_h.reshape(self.Nh, self.d)
@@ -208,18 +185,6 @@ class ControlledSDE2D(object):
 
         plt.show()
 
-    def plot_mfht(self, ylim=None):
-        fig, ax = plt.subplots()
-        ax.set_title(r'Estimation of $E[fht | X_0 = x]$')
-        ax.set_xlabel('x')
-        ax.set_xlim(self.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
-        x = self.domain_h
-        y = self.mfht
-        ax.plot(x, y)
-        plt.show()
-
 
 class OverdampedLangevinSDE2D(ControlledSDE2D):
     '''
@@ -227,6 +192,9 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
 
     def __init__(self, beta=1., domain=None):
         super().__init__(domain=domain)
+
+        # overdamped langevin flag
+        self.is_overdamped_langevin = True
 
         # inverse temperature
         self.beta = beta
@@ -303,6 +271,119 @@ class DoubleWellCommittor2D(OverdampedLangevinSDE2D):
             self.target_set_b = target_set_b
         else:
             self.target_set_b = np.full((self.d, 2), [1, 2])
+
+        # committor setting
+        self.set_committor_setting(epsilon)
+
+class DoubleWellCurvedCommittor2D(OverdampedLangevinSDE2D):
+    '''
+    '''
+
+    def __init__(self, beta=1., alpha=np.array([1., 1.]), epsilon=1e-10,
+                 domain=None, target_set_a=None, target_set_b=None):
+        super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'doublewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
+
+        # potential
+        self.alpha = alpha
+        self.potential = functools.partial(double_well_curved_2d)#, alpha=self.alpha)
+        self.gradient = functools.partial(double_well_curved_gradient_2d)#, alpha=self.alpha)
+
+        # drift term
+        self.drift = lambda x: - self.gradient(x)
+
+        # domain
+        if self.domain is not None:
+            self.domain = domain
+        else:
+            self.domain = np.full((self.d, 2), [-2, 2])
+
+        # target sets
+        if target_set_a is not None:
+            self.target_set_a = target_set_a
+        else:
+            self.target_set_a = np.array([[-2, -1], [-1.5, -0.5]])
+
+        if target_set_b is not None:
+            self.target_set_b = target_set_b
+        else:
+            self.target_set_b = np.array([[1, 2], [-1.5, -0.5]])
+
+        # committor setting
+        self.set_committor_setting(epsilon)
+
+class TripleWellStoppingTime2D(OverdampedLangevinSDE2D):
+    '''
+    '''
+
+    def __init__(self, beta=1., alpha=1., lam=1.0, domain=None, target_set=None):
+        super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'triplewell-2d-st__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+
+        # potential
+        self.alpha = alpha
+        self.potential = functools.partial(triple_well_2d, alpha=self.alpha)
+        self.gradient = functools.partial(triple_well_gradient_2d, alpha=self.alpha)
+
+        # drift term
+        self.drift = lambda x: - self.gradient(x)
+
+        # domain
+        if self.domain is not None:
+            self.domain = domain
+        else:
+            self.domain = np.full((self.d, 2), [-2, 2])
+
+        # target set
+        dx = dy = 0.3
+        if target_set is not None:
+            self.target_set = target_set
+        else:
+            self.target_set = np.array([[1 -dx, 1 + dx], [-0 -dy, -0 + dy]])
+
+        # committor setting
+        self.set_stopping_time_setting(lam=lam)
+
+class TripleWellCommittor2D(OverdampedLangevinSDE2D):
+    '''
+    '''
+
+    def __init__(self, beta=1., epsilon=1e-10, alpha=1.,
+                 domain=None, target_set_a=None, target_set_b=None):
+        super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'triplewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+
+        # potential
+        self.alpha = alpha
+        self.potential = functools.partial(triple_well_2d, alpha=self.alpha)
+        self.gradient = functools.partial(triple_well_gradient_2d, alpha=self.alpha)
+
+        # drift term
+        self.drift = lambda x: - self.gradient(x)
+
+        # domain
+        if self.domain is not None:
+            self.domain = domain
+        else:
+            self.domain = np.full((self.d, 2), [-2, 2])
+
+        # target sets
+        dx = dy = 0.3
+        if target_set_a is not None:
+            self.target_set_a = target_set_a
+        else:
+            self.target_set_a = np.array([[-1 -dx, -1 + dx], [-0 -dy, -0 + dy]])
+
+        if target_set_b is not None:
+            self.target_set_b = target_set_b
+        else:
+            self.target_set_b = np.array([[1 -dx, 1 + dx], [-0 -dy, -0 + dy]])
 
         # committor setting
         self.set_committor_setting(epsilon)
