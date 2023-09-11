@@ -17,7 +17,7 @@ $$u^* \in \text{argmin}_u \{ \text{Var}^x \bigl(I(X^u) M^u \bigr) \}.$$
 
 ### HJB equation
 It is well known that the quantity that we want to estimate satisfies the following BVP
-$$(\mathcal{L} -f) \Psi = 0 \quad \forall x \in \mathcal{O}, \quad \Psi = \exp(-g) \quad \forall x \in \partial{\mathcal{O}},$$
+$$(\mathcal{L} -f(x)) \Psi(x) = 0 \quad \forall x \in \mathcal{O}, \quad \Psi(x) = \exp(-g(x)) \quad \forall x \in \partial{\mathcal{O}},$$
 on the domain $\mathcal{O} \coloneqq \mathcal{D} \cap \mathcal{T}^c$ where $\mathcal{L}$ denotes the infinitesimal generator of the original not controlled process i.e. case $u=0$.
 
 ## Contains
@@ -31,8 +31,9 @@ on the domain $\mathcal{O} \coloneqq \mathcal{D} \cap \mathcal{T}^c$ where $\mat
 git clone git@github.com:riberaborrell/sde-hjb-solver.git
 ```
 
-2) create virtual environment and install required packages
+2) move inside the directory, create virtual environment and install required packages
 ```
+cd sde-hjb-solver
 make venv
 ```
 
@@ -43,7 +44,7 @@ source venv/bin/activate
 
 4) create config.py file and edit it
 ```
-cp src/sde-hjb-solver/config_template.py src/sde-hjb-solver/config.py
+cp src/sde_hjb_solver/config_template.py src/sde_hjb_solver/config.py
 ```
 
 

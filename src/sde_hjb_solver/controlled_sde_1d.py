@@ -17,6 +17,11 @@ class ControlledSDE1D(object):
         # domain bounds
         self.domain = domain
 
+        # problem types flags
+        self.is_fht = False
+        self.is_committor = False
+        self.overdamped_langevin = False
+
     def discretize_domain_1d(self, h):
         '''
         '''
@@ -39,9 +44,11 @@ class ControlledSDE1D(object):
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
-    def set_stopping_time_setting(self, lam=1.):
+    def set_fht_setting(self, lam=1.):
+        ''' set the first hitting time setting
         '''
-        '''
+        # set fht problem flag
+        self.is_fht = True
 
         # running and final costs
         self.lam = lam
@@ -49,7 +56,7 @@ class ControlledSDE1D(object):
         self.g = functools.partial(constant, a=0.)
 
         # target set indices
-        self.get_target_set_idx = self.get_target_set_idx_stopping_time
+        self.get_target_set_idx = self.get_target_set_idx_fht
 
     def compute_mfht(self):
         ''' estimates the expected first hitting time by finite differences of the quantity
@@ -61,20 +68,22 @@ class ControlledSDE1D(object):
         delta = 0.001
 
         sde_plus = copy(self)
-        sde_plus.set_stopping_time_setting(lam=delta)
+        sde_plus.set_fht_setting(lam=delta)
         sol_plus = SolverHJB1D(sde_plus, self.h)
         sol_plus.solve_bvp()
 
         sde_minus = copy(self)
-        sde_minus.set_stopping_time_setting(lam=-delta)
+        sde_minus.set_fht_setting(lam=-delta)
         sol_minus = SolverHJB1D(sde_minus, self.h)
         sol_minus.solve_bvp()
 
-        self.mfht = - (sol_plus.psi - sol_minus.psi) / (2 * delta)
+        return - (sol_plus.psi - sol_minus.psi) / (2 * delta)
 
     def set_committor_setting(self, epsilon=1e-10):
         '''
         '''
+        # set committor problem flag
+        self.is_committor = True
 
         # running and final costs
         self.f = lambda x: 0
@@ -91,12 +100,11 @@ class ControlledSDE1D(object):
     def get_target_set_idx(self):
         raise NameError('Method not defined in subclass')
 
-    def get_target_set_idx_stopping_time(self):
+    def get_target_set_idx_fht(self):
         '''
         '''
         # target set lower and upper bound
         target_set_lb, target_set_ub = self.target_set[0], self.target_set[1]
-
 
         # indices of the discretized domain corresponding to the target set
         is_in_target_set = (self.domain_h >= target_set_lb) & (self.domain_h <= target_set_ub)
@@ -196,7 +204,7 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
         # diffusion
         self.diffusion = np.sqrt(2 / self.beta)
 
-class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
+class DoubleWellFHT1D(OverdampedLangevinSDE1D):
     '''
     '''
 
@@ -204,7 +212,7 @@ class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         super().__init__(beta=beta, domain=domain)
 
         # log name
-        self.name = 'doublewell-1d-st__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+        self.name = 'doublewell-1d-fht__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
 
         # potential
         self.alpha = alpha
@@ -224,8 +232,8 @@ class DoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         else:
             self.target_set = (1, 2)
 
-        # stopping time setting
-        self.set_stopping_time_setting(lam=lam)
+        # first hitting time setting
+        self.set_fht_setting(lam=lam)
 
 
 class DoubleWellCommittor1D(OverdampedLangevinSDE1D):
@@ -265,47 +273,7 @@ class DoubleWellCommittor1D(OverdampedLangevinSDE1D):
         # committor setting
         self.set_committor_setting(epsilon)
 
-class FiveWellCommittor1D(OverdampedLangevinSDE1D):
-    '''
-    '''
-
-    def __init__(self, beta=1., epsilon=1e-10, domain=None):
-        super().__init__(beta=beta, domain=domain)
-
-        # log name
-        self.name = 'fivewell-1d-committor__beta{:.1f}'.format(beta)
-
-
-        # potential
-        self.potential = lambda x: + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
-                                   - 0.6 * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) \
-                                   - 0.7 * np.exp(-0.5*(x-1.8)**2/(0.2)**2)
-
-        # drift term
-        self.gradient = lambda x: + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
-                               - 0.6 * (x + 2) * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) / (0.2)**2 \
-                               - 0.7 * (x - 1.8) * np.exp(-0.5*(x - 1.8)**2/(0.2)**2) / (0.2)**2
-
-        # drift term
-        self.drift = lambda x: - self.gradient(x)
-
-        # domain
-        if self.domain is None:
-            self.domain = (-5, 5)
-
-        # target set
-        x1 = -3.9
-        x2 = -0.1
-        x3 = 3.9
-        #self.target_set_a = (x3 - 0.1, x3 + 0.1)
-        self.target_set_a = (x2 - 0.1, x2 + 0.1)
-        self.target_set_b = (x1 - 0.1, x1 + 0.1)
-
-        # committor setting
-        self.set_committor_setting(epsilon)
-
-
-class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
+class SkewDoubleWellFHT1D(OverdampedLangevinSDE1D):
     ''' We aim to compute the MFHT of a process following overdamped langevin
         dynamics with skew double well potential (see Hartmann2012).
     '''
@@ -314,7 +282,7 @@ class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         super().__init__(beta=beta, domain=domain)
 
         # log name
-        self.name = 'skewdoublewell-1d-st__beta{:.1f}'.format(beta)
+        self.name = 'skewdoublewell-1d-fht__beta{:.1f}'.format(beta)
 
         # potential
         self.potential = skew_double_well_1d
@@ -333,9 +301,70 @@ class SkewDoubleWellStoppingTime1D(OverdampedLangevinSDE1D):
         else:
             self.target_set = (-1.1, -1)
 
-        # stopping time setting
-        self.set_stopping_time_setting(lam=lam)
+        # first hitting time setting
+        self.set_fht_setting(lam=lam)
 
+class FiveWellFHT1D(OverdampedLangevinSDE1D):
+    '''
+    '''
+
+    def __init__(self, beta=1., lam=1.0, domain=None):
+        super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'fivewell-1d-fht__beta{:.1f}'.format(beta)
+
+        # potential
+        self.potential = five_well_1d
+        self.gradient = five_well_gradient_1d
+
+        # drift term
+        self.drift = lambda x: - self.gradient(x)
+
+        # domain
+        if self.domain is None:
+            self.domain = (-5, 5)
+
+        # target set
+        x = 3.9
+        self.target_set = (x - 0.1, x + 0.1)
+
+        # first hitting time setting
+        self.set_fht_setting(lam=lam)
+
+
+class FiveWellCommittor1D(OverdampedLangevinSDE1D):
+    '''
+    '''
+
+    def __init__(self, beta=1., epsilon=1e-10, domain=None):
+        super().__init__(beta=beta, domain=domain)
+
+        # log name
+        self.name = 'fivewell-1d-committor__beta{:.1f}'.format(beta)
+
+
+        # potential
+        self.potential = five_well_1d
+        self.gradient = five_well_gradient_1d
+
+        # drift term
+        self.drift = lambda x: - self.gradient(x)
+
+        # domain
+        if self.domain is None:
+            self.domain = (-5, 5)
+
+        # target set
+        x1 = -3.9
+        x2 = -0.1
+        x3 = 3.9
+        #self.target_set_a = (x3 - 0.1, x3 + 0.1)
+        self.target_set_a = (x2 - 0.1, x2 + 0.1)
+        self.target_set_b = (x1 - 0.1, x1 + 0.1)
+
+        # committor setting
+        self.set_committor_setting(epsilon)
 
 class BrownianMotionCommittor1D(ControlledSDE1D):
     '''

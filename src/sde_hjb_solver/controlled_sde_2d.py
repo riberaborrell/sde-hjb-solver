@@ -17,6 +17,11 @@ class ControlledSDE2D(object):
         # domain bounds
         self.domain = domain
 
+        # problem types flags
+        self.is_fht = False
+        self.is_committor = False
+        self.overdamped_langevin = False
+
     def discretize_domain_2d(self, h):
         '''
         '''
@@ -62,9 +67,11 @@ class ControlledSDE2D(object):
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
-    def set_stopping_time_setting(self, lam=1.):
+    def set_fht_setting(self, lam=1.):
         '''
         '''
+        # set fht problem flag
+        self.is_fht = True
 
         # running and final costs
         self.lam = lam
@@ -72,11 +79,14 @@ class ControlledSDE2D(object):
         self.g = functools.partial(constant, a=0.)
 
         # target set indices
-        self.get_target_set_idx = self.get_target_set_idx_stopping_time
+        self.get_target_set_idx = self.get_target_set_idx_fht
+
 
     def set_committor_setting(self, epsilon=1e-10):
         '''
         '''
+        # set committor problem flag
+        self.is_committor = True
 
         # running and final costs
         self.f = lambda x: 0
@@ -91,11 +101,10 @@ class ControlledSDE2D(object):
         # target set indices
         self.get_target_set_idx = self.get_target_set_idx_committor
 
-
     def get_target_set_idx(self):
         raise NameError('Method not defined in subclass')
 
-    def get_target_set_idx_stopping_time(self):
+    def get_target_set_idx_fht(self):
         '''
         '''
         # flatten domain_h
@@ -202,7 +211,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
         # diffusion
         self.diffusion = np.sqrt(2 / self.beta)
 
-class DoubleWellStoppingTime2D(OverdampedLangevinSDE2D):
+class DoubleWellFHT2D(OverdampedLangevinSDE2D):
     '''
     '''
 
@@ -210,7 +219,7 @@ class DoubleWellStoppingTime2D(OverdampedLangevinSDE2D):
         super().__init__(beta=beta, domain=domain)
 
         # log name
-        self.name = 'doublewell-2d-st__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
+        self.name = 'doublewell-2d-fht__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
 
         # potential
         self.alpha = alpha
@@ -232,8 +241,8 @@ class DoubleWellStoppingTime2D(OverdampedLangevinSDE2D):
         else:
             self.target_set = np.full((self.d, 2), [1, 2])
 
-        # stopping time setting
-        self.set_stopping_time_setting(lam=lam)
+        # first hitting time setting
+        self.set_fht_setting(lam=lam)
 
 
 class DoubleWellCommittor2D(OverdampedLangevinSDE2D):
@@ -314,7 +323,7 @@ class DoubleWellCurvedCommittor2D(OverdampedLangevinSDE2D):
         # committor setting
         self.set_committor_setting(epsilon)
 
-class TripleWellStoppingTime2D(OverdampedLangevinSDE2D):
+class TripleWellFHT2D(OverdampedLangevinSDE2D):
     '''
     '''
 
@@ -322,7 +331,7 @@ class TripleWellStoppingTime2D(OverdampedLangevinSDE2D):
         super().__init__(beta=beta, domain=domain)
 
         # log name
-        self.name = 'triplewell-2d-st__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+        self.name = 'triplewell-2d-fht__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
 
         # potential
         self.alpha = alpha
@@ -346,7 +355,7 @@ class TripleWellStoppingTime2D(OverdampedLangevinSDE2D):
             self.target_set = np.array([[1 -dx, 1 + dx], [-0 -dy, -0 + dy]])
 
         # committor setting
-        self.set_stopping_time_setting(lam=lam)
+        self.set_fht_setting(lam=lam)
 
 class TripleWellCommittor2D(OverdampedLangevinSDE2D):
     '''

@@ -159,6 +159,40 @@ def skew_double_well_gradient_1d(x):
 
     return 4 * x * (x**2 - 1) - 0.2
 
+def five_well_1d(x):
+    ''' 1-dimensional five well potential.
+    '''
+    d = 1
+    x = np.asarray(x)
+
+    # array input
+    if x.ndim == 1:
+        assert x.shape[0] == d, ''
+
+    # batch input
+    elif x.ndim == 2:
+        assert x.shape[1] == d, ''
+
+    return + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
+           - 0.6 * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) \
+           - 0.7 * np.exp(-0.5*(x-1.8)**2/(0.2)**2)
+
+def five_well_gradient_1d(x):
+    ''' Gradient of the 1-dimensional five well potential.
+    '''
+    x = np.asarray(x)
+
+    # array input
+    if x.ndim == 1:
+        assert x.shape[0] == 1, ''
+
+    # batch input
+    elif x.ndim == 2:
+        assert x.shape[1] == 1, ''
+
+    return + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
+           - 0.6 * (x + 2) * np.exp(-0.5 *(x + 2)**2 / (0.2)**2) / (0.2)**2 \
+           - 0.7 * (x - 1.8) * np.exp(-0.5*(x - 1.8)**2/(0.2)**2) / (0.2)**2
 
 def double_well_curved_2d(x):
     '''

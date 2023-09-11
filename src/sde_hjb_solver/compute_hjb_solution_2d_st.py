@@ -1,7 +1,7 @@
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_2d_st import SolverHJB2D
-from sde_hjb_solver.controlled_sde_2d import *
+from sde_hjb_solver.controlled_sde_2d import DoubleWellFHT2D
 from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
@@ -17,9 +17,7 @@ def main():
     d = 2
 
     # initialize hjb solver
-    sde = DoubleWellStoppingTime2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
-    #sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
-    #sde = TripleWellCommittor2D(beta=args.beta)
+    sde = DoubleWellFHT2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
 
     # initialize hjb solver
     sol_hjb = SolverHJB2D(sde, h=args.h, load=args.load)
@@ -29,7 +27,6 @@ def main():
         sol_hjb.solve_bvp()
         sol_hjb.compute_value_function()
         sol_hjb.compute_optimal_control()
-        sol_hjb.sde.compute_mfht()
         sol_hjb.save()
 
     # report solution

@@ -42,7 +42,7 @@ class SolverHJB1D(object):
 
     Methods
     -------
-    __init__(sde, h)
+    __init__(sde, h, load)
 
     start_timer()
 
@@ -256,8 +256,8 @@ class SolverHJB1D(object):
             'u_opt': self.u_opt,
             'ct': self.ct,
         }
-        if hasattr(self.sde, 'mfht'):
-            data['mfht'] = self.sde.mfht
+        if hasattr(self, 'mfht'):
+            data['mfht'] = self.mfht
 
         # save arrays in a npz file
         save_data(data, self.rel_dir_path)

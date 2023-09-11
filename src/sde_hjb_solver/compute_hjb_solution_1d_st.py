@@ -1,7 +1,7 @@
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_1d_st import SolverHJB1D
-from sde_hjb_solver.controlled_sde_1d import *
+from sde_hjb_solver.controlled_sde_1d import DoubleWellFHT1D
 from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
@@ -17,9 +17,7 @@ def main():
     d = 1
 
     # initialize hjb solver
-    sde = DoubleWellStoppingTime1D(beta=args.beta, alpha=args.alpha_i)
-    #sde = DoubleWellCommittor1D(beta=args.beta, alpha=args.alpha_i)
-    #sde = SkewDoubleWellStoppingTime1D(beta=args.beta)
+    sde = DoubleWellFHT1D(beta=args.beta, alpha=args.alpha_i)
 
     # initialize hjb solver
     sol_hjb = SolverHJB1D(sde, h=args.h, load=args.load)
@@ -29,7 +27,9 @@ def main():
         sol_hjb.solve_bvp()
         sol_hjb.compute_value_function()
         sol_hjb.compute_optimal_control()
-        sol_hjb.sde.compute_mfht()
+
+        if sol_hjb.sde.is_fht:
+            sol_hjb.mfht = sol_hjb.sde.compute_mfht()
         sol_hjb.save()
 
     # report solution
@@ -41,15 +41,15 @@ def main():
         return
 
     # evaluate in grid
-
     if sol_hjb.sde.is_overdamped_langevin:
         sol_hjb.get_perturbed_potential_and_drift()
 
     sol_hjb.plot_1d_psi()
     sol_hjb.plot_1d_value_function()
-    sol_hjb.plot_1d_control()#(ylim=(-0.15, 20))
+    sol_hjb.plot_1d_control()
+
     if sol_hjb.sde.is_overdamped_langevin:
-        sol_hjb.plot_1d_perturbed_potential()#(ylim=(0, 20))
+        sol_hjb.plot_1d_perturbed_potential
         sol_hjb.plot_1d_perturbed_drift()
 
     if hasattr(sol_hjb, 'mfht'):
