@@ -16,6 +16,13 @@ def get_base_parser():
         help='Set the dimension d. Default: 1',
     )
     parser.add_argument(
+        '--theta',
+        dest='theta',
+        type=float,
+        default=1.,
+        help='Set theta parameter of Ornstein-Uhlenbeck. Default: 1.',
+    )
+    parser.add_argument(
         '--alpha-i',
         dest='alpha_i',
         type=float,
@@ -32,11 +39,18 @@ def get_base_parser():
               of the double well potential. Default: 1.',
     )
     parser.add_argument(
+        '--sigma',
+        dest='sigma',
+        type=float,
+        default=1.,
+        help='Set the diffusion term parameter. Default: 1.',
+    )
+    parser.add_argument(
         '--beta',
         dest='beta',
         type=float,
         default=1.,
-        help='Set the beta parameter. Default: 1.',
+        help='Set the inverse of the the temperature parameter. Default: 1.',
     )
     parser.add_argument(
         '--nu-i',

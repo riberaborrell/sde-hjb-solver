@@ -70,17 +70,17 @@ class SolverHJB1D(object):
 
     write_report(x)
 
-    plot_1d_psi(ylim=None)
+    plot_1d_psi(xlim=None, ylim=None)
 
-    plot_1d_value_function(ylim=None)
+    plot_1d_value_function(xlim=None, ylim=None)
 
-    plot_1d_perturbed_potential(ylim=None)
+    plot_1d_perturbed_potential(xlim=None, ylim=None)
 
-    plot_1d_control(ylim=None)
+    plot_1d_control(xlim=None, ylim=None)
 
-    plot_1d_perturbed_drift(ylim=None)
+    plot_1d_perturbed_drift(xlim=None, ylim=None)
 
-    plot_1d_mfht(ylim=None)
+    plot_1d_mfht(xlim=None, ylim=None)
 
     '''
 
@@ -423,63 +423,63 @@ class SolverHJB1D(object):
         h, m, s = get_time_in_hms(self.ct)
         print('\nComputational time: {:d}:{:02d}:{:02.2f}\n'.format(h, m, s))
 
-    def plot_1d_psi(self, ylim=None):
+    def plot_1d_psi(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\Psi(x)$')
         ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.psi, lw=2.5)
         plt.show()
 
-    def plot_1d_value_function(self, ylim=None):
+    def plot_1d_value_function(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\Phi(x)$')
         ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.value_function, lw=2.5)
         plt.show()
 
-    def plot_1d_perturbed_potential(self, ylim=None):
+    def plot_1d_perturbed_potential(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
         ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.V, lw=2.5)
         ax.plot(self.sde.domain_h, self.perturbed_potential, lw=2.5)
         plt.show()
 
-    def plot_1d_control(self, ylim=None):
+    def plot_1d_control(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Optimal control $u^*(x)$')
         ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.u_opt, lw=2.5)
         plt.show()
 
-    def plot_1d_perturbed_drift(self, ylim=None):
+    def plot_1d_perturbed_drift(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
         ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         self.get_perturbed_potential_and_drift()
         ax.plot(self.sde.domain_h, self.perturbed_drift, lw=2.5)
         plt.show()
 
-    def plot_1d_mfht(self, ylim=None):
+    def plot_1d_mfht(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\mathbb{E}^x[\tau]$')
         ax.set_xlabel('x')
-        ax.set_xlim(self.sde.domain)
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None:
             ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.mfht, lw=2.5)

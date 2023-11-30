@@ -1,7 +1,7 @@
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_2d_st import SolverHJB2D
-from sde_hjb_solver.controlled_sde_2d import DoubleWellFHT2D
+from sde_hjb_solver.controlled_sde_2d import DoubleWellMGF2D, DoubleWellCommittor2D
 from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
@@ -17,7 +17,8 @@ def main():
     d = 2
 
     # initialize hjb solver
-    sde = DoubleWellFHT2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
+    #sde = DoubleWellMGF2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
+    sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i), ts_pot_level=0.25)
 
     # initialize hjb solver
     sol_hjb = SolverHJB2D(sde, h=args.h, load=args.load)
@@ -27,6 +28,10 @@ def main():
         sol_hjb.solve_bvp()
         sol_hjb.compute_value_function()
         sol_hjb.compute_optimal_control()
+
+        if sol_hjb.sde.is_mgf:
+            sol_hjb.mfht = sol_hjb.sde.compute_mfht()
+
         sol_hjb.save()
 
     # report solution
@@ -49,7 +54,10 @@ def main():
 
     if sol_hjb.sde.is_overdamped_langevin:
         sol_hjb.plot_2d_perturbed_potential()
+        #sol_hjb.plot_2d_perturbed_drift()
 
+    if hasattr(sol_hjb, 'mfht'):
+        sol_hjb.plot_2d_mfht()
 
 if __name__ == "__main__":
     main()

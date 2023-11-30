@@ -36,6 +36,8 @@ class SolverHJB2D(object):
         value function of the HJB equation
     u_opt: array
         optimal control of the HJB equation
+    mfht: array
+       mean first hitting time
 
 
     Methods
@@ -74,16 +76,17 @@ class SolverHJB2D(object):
 
     write_report(x)
 
-    plot_2d_psi(ylim=None)
+    plot_2d_psi(levels, isolines=True, xlim=None, ylim=None)
 
-    plot_2d_value_function(ylim=None)
+    plot_2d_value_function(levels, isolines=True, xlim=None, ylim=None)
 
-    plot_2d_perturbed_potential(ylim=None)
+    plot_2d_perturbed_potential(levels, isolines=True, xlim=None, ylim=None)
 
-    plot_2d_control(ylim=None)
+    plot_2d_control(scale=None, width=0.005, xlim=None, ylim=None)
 
-    plot_2d_perturbed_drift(ylim=None)
+    plot_2d_perturbed_drift(levels, isolines=True, xlim=None, ylim=Noney)
 
+    plot_2d_mfht(levels, isolines=True, xlim=None, ylim=None)
     '''
 
     def __init__(self, sde, h, load=False):
@@ -387,6 +390,9 @@ class SolverHJB2D(object):
             'u_opt': self.u_opt,
             'ct': self.ct,
         }
+        if hasattr(self, 'mfht'):
+            data['mfht'] = self.mfht
+
         # save arrays in a npz file
         save_data(data, self.rel_dir_path)
 
@@ -524,6 +530,7 @@ class SolverHJB2D(object):
 
         # psi, value function and control
         print('\n psi, value function and optimal control at x')
+        return
 
         print('x: {:2.3f}'.format(x))
         psi = self.get_psi_at_x(x)
@@ -552,78 +559,84 @@ class SolverHJB2D(object):
         h, m, s = get_time_in_hms(self.ct)
         print('\nComputational time: {:d}:{:02d}:{:02.2f}\n'.format(h, m, s))
 
-    def plot_2d_psi(self):
+    def plot_2d_psi(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\Psi(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(self.sde.domain[0])
-        ax.set_ylim(self.sde.domain[1])
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
+        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
             self.sde.domain_h[:, :, 0],
             self.sde.domain_h[:, :, 1],
             self.psi,
+            levels=levels,
             extend='both',
         )
+        if isolines: ax.contour(cs, colors='k')
 
         # colorbar
         cbar = fig.colorbar(cs)
 
         plt.show()
 
-    def plot_2d_value_function(self):
+    def plot_2d_value_function(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\Phi(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(self.sde.domain[0])
-        ax.set_ylim(self.sde.domain[1])
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
+        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
             self.sde.domain_h[:, :, 0],
             self.sde.domain_h[:, :, 1],
             self.value_function,
+            levels=levels,
             extend='both',
         )
+        if isolines: ax.contour(cs, colors='k')
 
         # colorbar
         cbar = fig.colorbar(cs)
 
         plt.show()
 
-    def plot_2d_perturbed_potential(self):
+    def plot_2d_perturbed_potential(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
         ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(self.sde.domain[0])
-        ax.set_ylim(self.sde.domain[1])
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
+        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
             self.sde.domain_h[:, :, 0],
             self.sde.domain_h[:, :, 1],
             self.perturbed_potential,
+            levels=levels,
             extend='both',
         )
+        if isolines: ax.contour(cs, colors='k')
 
         # colorbar
         cbar = fig.colorbar(cs)
 
         plt.show()
 
-    def plot_2d_control(self, scale=None, width=0.005):
+    def plot_2d_control(self, scale=None, width=0.005, xlim=None, ylim=None):
         from matplotlib import colors, cm
 
         fig, ax = plt.subplots()
         ax.set_title(r'Optimal control $u^*(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
-        ax.set_xlim(self.sde.domain[0])
-        ax.set_ylim(self.sde.domain[1])
+        ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
+        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         X = self.sde.domain_h[:, :, 0]
         Y = self.sde.domain_h[:, :, 1]
@@ -660,3 +673,33 @@ class SolverHJB2D(object):
 
         plt.show()
 
+    """
+    def plot_2d_perturbed_drift(self):
+        fig, ax = plt.subplots()
+        ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
+        self.get_perturbed_potential_and_drift()
+        plt.show()
+    """
+
+    def plot_2d_mfht(self, levels=10, isolines=True, xlim=None, ylim=None):
+        fig, ax = plt.subplots()
+        ax.set_title(r'Estimation of $\mathbb{E}^x[\tau]$')
+        ax.set_xlabel(r'$x_1$')
+        ax.set_ylabel(r'$x_2$')
+        ax.set_xlim(self.sde.domain[0])
+        ax.set_ylim(self.sde.domain[1])
+
+        # contour f
+        cs = ax.contourf(
+            self.sde.domain_h[:, :, 0],
+            self.sde.domain_h[:, :, 1],
+            self.mfht,
+            levels=levels,
+            extend='both',
+        )
+        if isolines: ax.contour(cs, colors='k')
+
+        # colorbar
+        cbar = fig.colorbar(cs)
+
+        plt.show()
