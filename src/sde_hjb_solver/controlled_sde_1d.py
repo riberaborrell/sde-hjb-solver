@@ -4,23 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from sde_hjb_solver.functions import *
+from sde_hjb_solver.controlled_sde import ControlledSDE
 
-class ControlledSDE1D(object):
+class ControlledSDE1D(ControlledSDE):
     '''
     '''
 
-    def __init__(self, domain):
+    def __init__(self, **kwargs):
 
         # dimension
-        self.d = 1
+        kwargs.update(d=1)
 
-        # domain bounds
-        self.domain = domain
-
-        # problem types flags
-        self.is_mgf = False
-        self.is_committor = False
-        self.overdamped_langevin = False
+        super().__init__(**kwargs)
 
     def discretize_domain_1d(self, h):
         '''
@@ -44,48 +39,16 @@ class ControlledSDE1D(object):
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
-    def set_mgf_setting(self, lam=1.):
-        ''' Set moment generating function of the first hitting time setting
-        '''
-        # set mgf problem flag
-        self.is_mgf = True
-
-        # set in target set condition function
-        self.is_in_target_set = lambda x: (x >= self.target_set[0]) & (x <= self.target_set[1])
-
-        # running and final costs
-        self.lam = lam
-        self.f = functools.partial(constant, a=lam)
-        self.g = functools.partial(constant, a=0.)
-
-        # target set indices
-        self.get_target_set_idx = self.get_target_set_idx_mgf
+    def set_is_in_target_set_mgf(self):
+        # set in target set condition function given a target set
+        self.is_in_target_set = lambda x: (x >= self.target_set[0]) & \
+                                          (x <= self.target_set[1])
 
 
-    def set_committor_setting(self, epsilon=1e-10):
-        ''' Set committor probability setting
-        '''
-        # set committor problem flag
-        self.is_committor = True
-
-        # set in target set condition functions
+    def set_is_in_target_set_committor(self):
+        # set in target set condition functions given the target sets
         self.is_in_target_set_a = lambda x: (x >= self.target_set_a[0]) & (x <= self.target_set_a[1])
         self.is_in_target_set_b = lambda x: (x >= self.target_set_b[0]) & (x <= self.target_set_b[1])
-
-        # running and final costs
-        self.epsilon = epsilon
-        self.f = lambda x: 0
-        self.g = lambda x: np.where(
-            self.is_in_target_set_b(x),
-            -np.log(1+epsilon),
-            -np.log(epsilon),
-        )
-
-        # target set indices
-        self.get_target_set_idx = self.get_target_set_idx_committor
-
-    def get_target_set_idx(self):
-        raise NameError('Method not defined in subclass')
 
     def get_target_set_idx_mgf(self):
         '''
@@ -99,12 +62,9 @@ class ControlledSDE1D(object):
         '''
         # indices of the discretized domain corresponding to the target sets
         x = self.domain_h
-        self.ts_a_idx = np.where(self.is_in_target_set_a(x) == True)[0]
-        self.ts_b_idx = np.where(self.is_in_target_set_b(x) == True)[0]
-        self.ts_idx = np.where(
-            (self.is_in_target_set_a(x) == True) | (self.is_in_target_set_b(x) == True)
-        )[0]
-
+        self.ts_a_idx = np.where(self.is_in_target_set_a(x))[0]
+        self.ts_b_idx = np.where(self.is_in_target_set_b(x))[0]
+        self.ts_idx = np.where(self.is_in_target_set_a(x) | self.is_in_target_set_b(x))[0]
 
     def get_idx(self, x):
         ''' get index of the grid point which approximates x
@@ -159,23 +119,57 @@ class ControlledSDE1D(object):
 
         return - (sol_plus.psi - sol_minus.psi) / (2 * delta)
 
-class BrownianMotionCommittor1D(ControlledSDE1D):
+class ScaledBrownianMotion1D(ControlledSDE1D):
     '''
     '''
 
-    def __init__(self, epsilon=1e-10, domain=None, target_set_a=None, target_set_b=None):
-        super().__init__(domain=domain)
-
-        # log name
-        self.name = 'brownian-1d-committor'.format()
+    def __init__(self, sigma=np.sqrt(2), **kwargs):
+        super().__init__(**kwargs)
 
         # drift and diffusion terms
         self.drift = lambda x: 0
-        self.diffusion = 1.
+        self.diffusion = sigma
 
         # domain
         if self.domain is None:
             self.domain = (-2, 2)
+
+class ScaledBrownianMotionMGF1D(ScaledBrownianMotion1D):
+    '''
+    '''
+
+    def __init__(self, lam=1.0, target_set_r=1., **kwargs):
+        super().__init__(**kwargs)
+
+        # log name
+        self.name = 'scaled-brownian-1d-mgf__sigma{:.1f}'.format(self.diffusion)
+
+        # target set radius
+        self.target_set_r = target_set_r
+
+        # first hitting time setting
+        self.set_mgf_setting(lam=lam)
+
+        # set in target set condition function
+        self.is_in_target_set = lambda x: np.abs(x) >= self.target_set_r
+
+    def u_opt_ana(self, x):
+        #TODO: generalize to arbitrary scaling factor sigma
+        return np.where(
+            self.is_in_target_set(x),
+            0,
+            np.sqrt(2) * (1 - np.exp(- 2*x)) /  (np.exp(- 2*x) + 1),
+        )
+
+class BrownianMotionCommittor1D(ScaledBrownianMotion1D):
+    '''
+    '''
+
+    def __init__(self, epsilon=1e-10, target_set_a=None, target_set_b=None, **kwargs):
+        super().__init__(**kwargs)
+
+        # log name
+        self.name = 'brownian-1d-committor__sigma{:.1f}'.format(self.diffusion)
 
         # target set
         if target_set_a is not None:
@@ -191,6 +185,9 @@ class BrownianMotionCommittor1D(ControlledSDE1D):
         # committor setting
         self.set_committor_setting(epsilon)
 
+        # set in target set condition function
+        self.set_is_in_target_set_committor()
+
     def psi_ana(self, x):
         a = self.target_set_a[1]
         b = self.target_set_b[0]
@@ -205,8 +202,8 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1., domain=None):
-        super().__init__(domain=domain)
+    def __init__(self, beta=1., **kwargs):
+        super().__init__(**kwargs)
 
         # overdamped langevin flag
         self.is_overdamped_langevin = True
@@ -234,8 +231,8 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
 class DoubleWell1D(OverdampedLangevinSDE1D):
     ''' Overdamped langevin dynamics with double well potential.
     '''
-    def __init__(self, beta=1., alpha=1., domain=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, alpha=1., **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.alpha = alpha
@@ -251,11 +248,11 @@ class DoubleWell1D(OverdampedLangevinSDE1D):
 
 class DoubleWellMGF1D(DoubleWell1D):
 
-    def __init__(self, beta=1., alpha=1., lam=1.0, domain=None, target_set=None):
-        super().__init__(beta=beta, alpha=alpha, domain=domain)
+    def __init__(self, lam=1.0, target_set=None, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-1d-mgf__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+        self.name = 'doublewell-1d-mgf__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # target set
         if target_set is not None:
@@ -266,15 +263,17 @@ class DoubleWellMGF1D(DoubleWell1D):
         # first hitting time setting
         self.set_mgf_setting(lam=lam)
 
+        # set in target set condition function
+        self.set_is_in_target_set_mgf()
+
 
 class DoubleWellCommittor1D(DoubleWell1D):
 
-    def __init__(self, beta=1., alpha=1., epsilon=1e-10,
-                 domain=None, target_set_a=None, target_set_b=None):
-        super().__init__(beta=beta, alpha=alpha, domain=domain)
+    def __init__(self, epsilon=1e-10, target_set_a=None, target_set_b=None, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-1d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+        self.name = 'doublewell-1d-committor__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # target set
         if target_set_a is not None:
@@ -290,12 +289,15 @@ class DoubleWellCommittor1D(DoubleWell1D):
         # committor setting
         self.set_committor_setting(epsilon)
 
+        # set in target set condition function
+        self.set_is_in_target_set_committor()
+
 class SkewDoubleWell1D(OverdampedLangevinSDE1D):
     ''' Overdamped langevin dynamics with skew double well potential.
     '''
 
-    def __init__(self, beta=1., domain=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.potential = skew_double_well_1d
@@ -312,11 +314,11 @@ class SkewDoubleWellMGF1D(SkewDoubleWell1D):
     ''' Moment generating function setting. We aim to compute the MFHT (see Hartmann2012).
     '''
 
-    def __init__(self, beta=1., lam=1., domain=None, target_set=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, lam=1.0, target_set=None, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'skewdoublewell-1d-mgf__beta{:.1f}'.format(beta)
+        self.name = 'skewdoublewell-1d-mgf__beta{:.1f}'.format(self.beta)
 
         # target set
         if target_set is not None:
@@ -327,12 +329,15 @@ class SkewDoubleWellMGF1D(SkewDoubleWell1D):
         # first hitting time setting
         self.set_mgf_setting(lam=lam)
 
+        # set in target set condition function
+        self.set_is_in_target_set_mgf()
+
 class TripleWell1D(OverdampedLangevinSDE1D):
     ''' Overdamped langevin dynamics with asymmetric triple well potential.
     '''
 
-    def __init__(self, beta=1., domain=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.potential = triple_well_1d
@@ -354,11 +359,11 @@ class TripleWellMGF1D(TripleWell1D):
     '''
     '''
 
-    def __init__(self, beta=1., lam=1.0, domain=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, lam=1.0, target_set=None, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-1d-mgf__beta{:.1f}'.format(beta)
+        self.name = 'triplewell-1d-mgf__beta{:.1f}'.format(self.beta)
 
         # target set
         self.target_set = (self.m1 - 0.1, self.m1 + 0.1)
@@ -366,16 +371,18 @@ class TripleWellMGF1D(TripleWell1D):
         # first hitting time setting
         self.set_mgf_setting(lam=lam)
 
+        # set in target set condition function
+        self.set_is_in_target_set_mgf()
 
 class TripleWellCommittor1D(TripleWell1D):
     '''
     '''
 
-    def __init__(self, beta=1., epsilon=1e-10, domain=None, ts_a='m2'):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, epsilon=1e-10, target_set_a=None, target_set_b=None, ts_a='m2', **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-1d-committor__beta{:.1f}'.format(beta)
+        self.name = 'triplewell-1d-committor__beta{:.1f}'.format(self.beta)
 
         # target set
         if ts_a == 'm2':
@@ -389,12 +396,64 @@ class TripleWellCommittor1D(TripleWell1D):
         # committor setting
         self.set_committor_setting(epsilon)
 
+        # set in target set condition function
+        self.set_is_in_target_set_committor()
+
+class RyckBell1D(OverdampedLangevinSDE1D):
+    ''' Overdamped langevin dynamics with ryck bell potential.
+    '''
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        # potential
+        self.potential = lambda x: ryck_bell_1d(x - np.pi)
+        self.gradient = lambda x: ryck_bell_gradient_1d(x - np.pi)
+
+        # drift term
+        self.drift = lambda x: - self.gradient(x)
+
+        # domain
+        if self.domain is None:
+            #self.domain = (-np.pi, np.pi)
+            self.domain = (0, 2 * np.pi)
+
+        # local minima
+        #self.m_trans = 0. # global minimum
+        #self.m_gauche1 = 2 * np.pi / 3 # local minimum
+        #self.m_gauche2 = - 2 * np.pi / 3 # local minimum
+        self.m_trans = np.pi # global minimum
+        self.m_gauche1 = np.pi / 3 # local minimum
+        self.m_gauche2 = 5 * np.pi / 3 # local minimum
+
+class RyckBellMGF1D(RyckBell1D):
+    '''
+    '''
+
+    #def __init__(self, beta=1., lam=1.0, domain=None, epsilon=20):
+    def __init__(self, lam=1.0, epsilon=20, **kwargs):
+        super().__init__(**kwargs)
+
+        # log name
+        self.name = 'ryck-bell-1d-mgf__beta{:.1f}'.format(self.beta)
+
+        # target set
+        self.epsilon = epsilon * np.pi / 180
+
+        # first hitting time setting
+        self.set_mgf_setting(lam=lam)
+
+        # set in target set condition function
+        self.is_in_target_set = lambda x: (np.abs(x - self.m_gauche1) <= self.epsilon) \
+                                        | (np.abs(x - self.m_gauche2) <= self.epsilon)
+
+
 class FiveWell1D(OverdampedLangevinSDE1D):
     ''' Overdamped langevin dynamics with five well potential.
     '''
 
-    def __init__(self, beta=1., domain=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.potential = five_well_1d
@@ -418,11 +477,11 @@ class FiveWellMGF1D(FiveWell1D):
     '''
     '''
 
-    def __init__(self, beta=1., lam=1.0, domain=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, lam=1.0, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'fivewell-1d-mgf__beta{:.1f}'.format(beta)
+        self.name = 'fivewell-1d-mgf__beta{:.1f}'.format(self.beta)
 
         # target set
         self.target_set = (self.m1 - 0.1, self.m1 + 0.1)
@@ -430,16 +489,18 @@ class FiveWellMGF1D(FiveWell1D):
         # first hitting time setting
         self.set_mgf_setting(lam=lam)
 
+        # set in target set condition function
+        self.set_is_in_target_set_mgf()
 
 class FiveWellCommittor1D(FiveWell1D):
     '''
     '''
 
-    def __init__(self, beta=1., epsilon=1e-10, domain=None, ts_a='m2'):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, epsilon=1e-10, ts_a='m2', **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'fivewell-1d-committor__beta{:.1f}'.format(beta)
+        self.name = 'fivewell-1d-committor__beta{:.1f}'.format(self.beta)
 
         # target set
         if ts_a == 'm2':
@@ -452,3 +513,6 @@ class FiveWellCommittor1D(FiveWell1D):
 
         # committor setting
         self.set_committor_setting(epsilon)
+
+        # set in target set condition function
+        self.set_is_in_target_set_committor()

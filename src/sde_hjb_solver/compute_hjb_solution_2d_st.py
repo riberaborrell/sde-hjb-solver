@@ -6,19 +6,16 @@ from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
     parser = get_base_parser()
-    parser.description = 'Computes the numerical solution of the 2d HJB equation associated to' \
-                         'the overdamped Langevin SDE'
+    parser.description = 'Computes finite difference solution of the 2d HJB equation'
     return parser
 
 def main():
     args = get_parser().parse_args()
 
     # set dimension
-    d = 2
-
     # initialize hjb solver
-    #sde = DoubleWellMGF2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
-    sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i), ts_pot_level=0.25)
+    sde = DoubleWellMGF2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
+    #sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i), ts_pot_level=0.25)
 
     # initialize hjb solver
     sol_hjb = SolverHJB2D(sde, h=args.h, load=args.load)

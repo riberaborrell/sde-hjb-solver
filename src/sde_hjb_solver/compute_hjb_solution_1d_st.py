@@ -1,23 +1,20 @@
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_1d_st import SolverHJB1D
-from sde_hjb_solver.controlled_sde_1d import DoubleWellMGF1D
+from sde_hjb_solver.controlled_sde_1d import DoubleWellMGF1D, DoubleWellCommittor1D
 from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
     parser = get_base_parser()
-    parser.description = 'Computes the numerical solution of the 1d HJB equation associated to' \
-                         'the overdamped Langevin SDE'
+    parser.description = 'Computes finite difference solution of the 1d HJB equation'
     return parser
 
 def main():
-    args = get_parser().parse_args()
-
-    # set dimension
-    d = 1
+    args = get_base_parser().parse_args()
 
     # initialize hjb solver
     sde = DoubleWellMGF1D(beta=args.beta, alpha=args.alpha_i)
+    #sde = DoubleWellCommittor1D(beta=args.beta, alpha=args.alpha_i)
 
     # initialize hjb solver
     sol_hjb = SolverHJB1D(sde, h=args.h, load=args.load)
@@ -29,7 +26,7 @@ def main():
         sol_hjb.compute_optimal_control()
 
         if sol_hjb.sde.is_mgf:
-            sol_hjb.mfht = sol_hjb.sde.compute_mfht()
+            sol_hjb.mfht = sol_hjb.sde.compute_mfht(delta=1e-5)
         sol_hjb.save()
 
     # report solution

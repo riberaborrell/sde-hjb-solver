@@ -4,23 +4,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from sde_hjb_solver.functions import *
+from sde_hjb_solver.controlled_sde import ControlledSDE
 
-class ControlledSDE2D(object):
+class ControlledSDE2D(ControlledSDE):
     '''
     '''
 
-    def __init__(self, domain):
+    def __init__(self, **kwargs):
 
         # dimension
-        self.d = 2
+        kwargs.update(d=2)
 
-        # domain bounds
-        self.domain = domain
-
-        # problem types flags
-        self.is_mgf = False
-        self.is_committor = False
-        self.overdamped_langevin = False
+        super().__init__(**kwargs)
 
     def discretize_domain_2d(self, h):
         '''
@@ -54,54 +49,14 @@ class ControlledSDE2D(object):
         is_in_boundary_x = ((x[:, 0] == x_lb) | (x[:, 0] == x_ub))
         is_in_boundary_y = ((x[:, 1] == y_lb) | (x[:, 1] == y_ub))
 
-        self.boundary_x_idx = np.where(is_in_boundary_x == True)[0]
-        self.boundary_y_idx = np.where(is_in_boundary_y == True)[0]
-        self.boundary_idx = np.where(
-            (is_in_boundary_x == True) |
-            (is_in_boundary_y == True)
-        )[0]
-        self.corner_idx = np.where(
-            (is_in_boundary_x == True) &
-            (is_in_boundary_y == True)
-        )[0]
+        self.boundary_x_idx = np.where(is_in_boundary_x)[0]
+        self.boundary_y_idx = np.where(is_in_boundary_y)[0]
+        self.boundary_idx = np.where(is_in_boundary_x | is_in_boundary_y)[0]
+        self.corner_idx = np.where(is_in_boundary_x & is_in_boundary_y)[0]
 
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
-    def set_mgf_setting(self, lam=1.):
-        ''' Set moment generating function of the first hitting time setting
-        '''
-        # set fht problem flag
-        self.is_mgf = True
-
-        # running and final costs
-        self.lam = lam
-        self.f = functools.partial(constant, a=lam)
-        self.g = functools.partial(constant, a=0.)
-
-        # target set indices
-        self.get_target_set_idx = self.get_target_set_idx_mgf
-
-    def set_committor_setting(self, epsilon=1e-10):
-        ''' Set committor probability setting
-        '''
-        # set committor problem flag
-        self.is_committor = True
-
-        # running and final costs
-        self.f = lambda x: 0
-        self.epsilon = epsilon
-        self.g = lambda x: np.where(
-            self.is_in_target_set_b(x),
-            -np.log(1+epsilon),
-            -np.log(epsilon),
-        )
-
-        # target set indices
-        self.get_target_set_idx = self.get_target_set_idx_committor
-
-    def get_target_set_idx(self):
-        raise NameError('Method not defined in subclass')
 
     def get_target_set_idx_mgf(self):
         '''
@@ -110,7 +65,7 @@ class ControlledSDE2D(object):
         x = self.domain_h.reshape(self.Nh, self.d)
 
         # get index
-        self.ts_idx = np.where(self.is_in_target_set_vect(x) == True)[0]
+        self.ts_idx = np.where(self.is_in_target_set_vect(x))[0]
 
     def get_target_set_idx_committor(self):
         '''
@@ -120,14 +75,14 @@ class ControlledSDE2D(object):
         x = self.domain_h.reshape(self.Nh, self.d)
 
         # indices of domain_h in tha target sets
-        self.ts_a_idx = np.where(self.is_in_target_set_a_vect(x) == True)[0]
-        self.ts_b_idx = np.where(self.is_in_target_set_b_vect(x) == True)[0]
+        self.ts_a_idx = np.where(self.is_in_target_set_a_vect(x))[0]
+        self.ts_b_idx = np.where(self.is_in_target_set_b_vect(x))[0]
         self.ts_idx = np.where(
-            (self.is_in_target_set_a_vect(x) == True) | (self.is_in_target_set_b_vect(x) == True)
+            self.is_in_target_set_a_vect(x) | self.is_in_target_set_b_vect(x)
         )[0]
 
     def get_idx(self, x):
-        '''
+        ''' get index of the grid point which approximates x
         '''
         x = np.asarray(x)
         is_scalar = False
@@ -139,9 +94,7 @@ class ControlledSDE2D(object):
         if x.ndim != 1:
             raise ValueError('x array dimension must be one')
 
-        idx = np.floor((
-            np.clip(x, self.domain[0], self.domain[1] - 2 * self.h) + self.domain[1]
-        ) / self.h).astype(int)
+        idx = self.get_idx_truncate(x)
 
         if is_scalar:
             return np.squeeze(idx)
@@ -149,6 +102,15 @@ class ControlledSDE2D(object):
             return idx
         else:
             return tuple(idx)
+
+    def get_idx_truncate(self, x):
+        x = np.clip(x, self.domain[0], self.domain[1])
+        idx = np.floor((x - self.domain[0]) / self.h).astype(int)
+        return idx
+        #idx = np.floor((
+        #    np.clip(x, self.domain[0], self.domain[1] - 2 * self.h) + self.domain[1]
+        #) / self.h).astype(int)
+
 
     def compute_mfht(self, delta=0.001):
         ''' estimates the expected first hitting time by finite differences of the quantity
@@ -193,25 +155,30 @@ class ControlledSDE2D(object):
         ax.legend(loc='upper right')
         plt.show()
 
-class BrownianMotionCommittor2D(ControlledSDE2D):
+class ScaledBrownianMotion2D(ControlledSDE2D):
     '''
     '''
 
-    def __init__(self, epsilon=1e-10, domain=None, radius_a=1., radius_b=3.):
-        super().__init__(domain=domain)
-
-        # log name
-        self.name = 'brownian-2d-committor'
+    def __init__(self, sigma=np.sqrt(2), **kwargs):
+        super().__init__(**kwargs)
 
         # drift and diffusion terms
         self.drift = lambda x: np.zeros(self.d)
-        self.diffusion = 1.
+        self.diffusion = sigma
 
         # domain
-        if self.domain is not None:
-            self.domain = domain
-        else:
+        if self.domain is None:
             self.domain = np.full((self.d, 2), [-3, 3])
+
+class BrownianMotionCommittor2D(ScaledBrownianMotion2D):
+    '''
+    '''
+
+    def __init__(self, epsilon=1e-10, radius_a=1., radius_b=3., **kwargs):
+        super().__init__(**kwargs)
+
+        # log name
+        self.name = 'scaled-brownian-2d-committor__sigma{:.1f}'.format(self.diffusion)
 
         # target set (in radial coordinates)
         assert radius_a < radius_b, ''
@@ -252,8 +219,8 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
     '''
     '''
 
-    def __init__(self, beta=1., domain=None):
-        super().__init__(domain=domain)
+    def __init__(self, beta=1., **kwargs):
+        super().__init__(**kwargs)
 
         # overdamped langevin flag
         self.is_overdamped_langevin = True
@@ -293,8 +260,8 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
 class DoubleWell2D(OverdampedLangevinSDE2D):
     '''
     '''
-    def __init__(self, beta=1., alpha=np.array([1., 1.]), domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, alpha=np.array([1., 1.]), ts_pot_level=None, **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.alpha = alpha
@@ -305,9 +272,7 @@ class DoubleWell2D(OverdampedLangevinSDE2D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        if self.domain is not None:
-            self.domain = domain
-        else:
+        if self.domain is None:
             self.domain = np.full((self.d, 2), [-2, 2])
 
         # target set potential level
@@ -317,12 +282,11 @@ class DoubleWellMGF2D(DoubleWell2D):
     '''
     '''
 
-    def __init__(self, beta=1., alpha=np.array([1., 1.]), lam=1.0, domain=None,
-                 ts_pot_level=None, target_set=None):
-        super().__init__(beta=beta, alpha=alpha, domain=domain, ts_pot_level=ts_pot_level)
+    def __init__(self, lam=1.0, target_set=None, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-2d-mgf__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
+        self.name = 'doublewell-2d-mgf__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
 
         # target set
         if target_set is not None:
@@ -331,10 +295,10 @@ class DoubleWellMGF2D(DoubleWell2D):
             self.target_set = np.full((self.d, 2), [1, 2])
 
         # set in target set condition function
-        self.is_in_target_set = lambda x: (x[:, 0] >= self.target_set[0, 0]) \
-                                        & (x[:, 0] <= self.target_set[0, 1]) \
-                                        & (x[:, 1] >= self.target_set[1, 0]) \
-                                        & (x[:, 1] <= self.target_set[1, 1])
+        self.is_in_target_set_vect = lambda x: (x[:, 0] >= self.target_set[0, 0]) \
+                                            & (x[:, 0] <= self.target_set[0, 1]) \
+                                            & (x[:, 1] >= self.target_set[1, 0]) \
+                                            & (x[:, 1] <= self.target_set[1, 1])
         """
         self.is_in_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) \
                                         & (x[:, 0] > 0) & (x[:, 1] > 0)
@@ -348,12 +312,11 @@ class DoubleWellCommittor2D(DoubleWell2D):
     '''
     '''
 
-    def __init__(self, beta=1., alpha=np.array([1., 1.]), epsilon=1e-10,
-                 domain=None, ts_pot_level=None, target_set_a=None, target_set_b=None):
-        super().__init__(beta=beta, alpha=alpha, domain=domain, ts_pot_level=ts_pot_level)
+    def __init__(self, epsilon=1e-10, target_set_a=None, target_set_b=None, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha[0])
+        self.name = 'doublewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
 
         # target sets
         if target_set_a is not None:
@@ -397,8 +360,8 @@ class DoubleWellCommittor2D(DoubleWell2D):
 class TripleWell2D(OverdampedLangevinSDE2D):
     ''' Overdamped langevin dynamics following a triple well potential
     '''
-    def __init__(self, beta=1., alpha=1., domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, alpha=1., ts_pot_level=None, **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.alpha = alpha
@@ -409,9 +372,7 @@ class TripleWell2D(OverdampedLangevinSDE2D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        if self.domain is not None:
-            self.domain = domain
-        else:
+        if self.domain is None:
             self.domain = np.array([[-1.5, 1.5], [-1, 2]])
 
         # target set potential level
@@ -424,11 +385,11 @@ class TripleWellMGF2D(TripleWell2D):
     '''
     '''
 
-    def __init__(self, beta=1., alpha=1., lam=1.0, domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, alpha=alpha, domain=domain, ts_pot_level=ts_pot_level)
+    def __init__(self, lam=1.0, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-2d-mgf__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+        self.name = 'triplewell-2d-mgf__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # set in target set condition function
         self.is_in_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -442,11 +403,11 @@ class TripleWellCommittor2D(TripleWell2D):
     '''
     '''
 
-    def __init__(self, beta=1., epsilon=1e-10, alpha=1., domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, alpha=alpha, domain=domain, ts_pot_level=ts_pot_level)
+    def __init__(self, epsilon=1e-10, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(beta, alpha)
+        self.name = 'triplewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # set in target set condition function
         self.is_in_target_set_a_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -461,8 +422,8 @@ class TripleWellCommittor2D(TripleWell2D):
 class MuellerBrown2D(OverdampedLangevinSDE2D):
     ''' Overdamped langevin dynamics following the Müller-Brown potential
     '''
-    def __init__(self, beta=1., domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, domain=domain)
+    def __init__(self, ts_pot_level=None, **kwargs):
+        super().__init__(**kwargs)
 
         # potential
         self.potential = mueller_brown_2d
@@ -472,27 +433,31 @@ class MuellerBrown2D(OverdampedLangevinSDE2D):
         self.drift = lambda x: - self.gradient(x)
 
         # domain
-        if self.domain is not None:
-            self.domain = domain
-        else:
+        if self.domain is None:
             self.domain = np.array([[-1.5, 1], [-0.5, 2]])
 
-          # target set potential level
+        # alternative domain
+        # domain = x \in R^2 | V(x) <= 250
+
+        # target set potential level
         if ts_pot_level is not None:
             self.ts_pot_level = ts_pot_level
         else:
             self.ts_pot_level = -100
+
+        # a = (−0.558, 1.441)
+        # b = (0.623, 0.028)
 
 
 class MuellerBrownMGF2D(MuellerBrown2D):
     '''
     '''
 
-    def __init__(self, beta=1., lam=1.0, domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, domain=domain, ts_pot_level=ts_pot_level)
+    def __init__(self, lam=1.0, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'mueller-brown-2d-mgf__beta{:.1f}'.format(beta)
+        self.name = 'mueller-brown-2d-mgf__beta{:.1f}'.format(self.beta)
 
         # set in target set condition function
         self.is_in_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -505,11 +470,11 @@ class MuellerBrownCommittor2D(MuellerBrown2D):
     '''
     '''
 
-    def __init__(self, beta=1., epsilon=1e-10, domain=None, ts_pot_level=None):
-        super().__init__(beta=beta, domain=domain, ts_pot_level=ts_pot_level)
+    def __init__(self, epsilon=1e-10, **kwargs):
+        super().__init__(**kwargs)
 
         # log name
-        self.name = 'mueller-brown-2d-committor__beta{:.1f}'.format(beta)
+        self.name = 'mueller-brown-2d-committor__beta{:.1f}'.format(self.beta)
 
         # set in target set condition function
         self.is_in_target_set_a_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \

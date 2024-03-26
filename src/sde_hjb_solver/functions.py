@@ -190,6 +190,12 @@ def triple_well_gradient_1d(x):
 
     return + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
 
+def ryck_bell_1d(x):
+    return np.polyval(np.array([-3.778, 3.156, -0.368, -1.578, 1.462, 1.116]), np.cos(x))
+
+def ryck_bell_gradient_1d(x):
+    return np.polyval(np.array([18.94, -12.624, 1.104, 3.156, -1.462]), np.cos(x)) * np.sin(x)
+
 def five_well_1d(x):
     ''' 1-dimensional five well potential.
     '''
