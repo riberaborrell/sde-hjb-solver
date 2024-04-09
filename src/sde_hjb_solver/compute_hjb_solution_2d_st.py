@@ -1,7 +1,7 @@
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_2d_st import SolverHJB2D
-from sde_hjb_solver.controlled_sde_2d import DoubleWellMGF2D, DoubleWellCommittor2D
+from sde_hjb_solver.controlled_sde_2d import *
 from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():
@@ -12,10 +12,18 @@ def get_parser():
 def main():
     args = get_parser().parse_args()
 
-    # set dimension
-    # initialize hjb solver
-    sde = DoubleWellMGF2D(beta=args.beta, alpha=np.full(2, args.alpha_i))
-    #sde = DoubleWellCommittor2D(beta=args.beta, alpha=np.full(2, args.alpha_i), ts_pot_level=0.25)
+    # choose sde
+    if args.setting == 'mgf':
+        SDE = DoubleWellMGF2D
+    elif args.setting == 'committor':
+        SDE = DoubleWellCommittor2D
+
+    # initialize sde
+    sde = SDE(
+        beta=args.beta,
+        alpha=np.full(2, args.alpha_i),
+        ts_pot_level=0.25,
+    )
 
     # initialize hjb solver
     sol_hjb = SolverHJB2D(sde, h=args.h, load=args.load)
@@ -26,7 +34,7 @@ def main():
         sol_hjb.compute_value_function()
         sol_hjb.compute_optimal_control()
 
-        if sol_hjb.sde.is_mgf:
+        if sol_hjb.sde.setting == 'mgf':
             sol_hjb.mfht = sol_hjb.sde.compute_mfht()
 
         sol_hjb.save()

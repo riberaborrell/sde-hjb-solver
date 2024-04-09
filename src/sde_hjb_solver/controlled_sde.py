@@ -15,15 +15,13 @@ class ControlledSDE(object):
         self.domain = domain
 
         # problem types flags
-        self.is_mgf = False
-        self.is_committor = False
         self.overdamped_langevin = False
 
     def set_mgf_setting(self, lam=1.):
         ''' Set moment generating function of the first hitting time setting
         '''
         # set mgf problem flag
-        self.is_mgf = True
+        self.setting = 'mgf'
 
         # running and final costs
         self.lam = lam
@@ -37,19 +35,16 @@ class ControlledSDE(object):
         ''' Set committor probability setting
         '''
         # set committor problem flag
-        self.is_committor = True
+        self.setting = 'committor'
 
         # running and final costs
         self.epsilon = epsilon
         self.f = lambda x: 0
         self.g = lambda x: np.where(
-            self.is_in_target_set_b(x),
+            self.is_target_set_b(x),
             -np.log(1+epsilon),
             -np.log(epsilon),
         )
 
         # target set indices
         self.get_target_set_idx = self.get_target_set_idx_committor
-
-    def get_target_set_idx(self):
-        raise NameError('Method not defined in subclass')

@@ -3,6 +3,18 @@ import argparse
 def get_base_parser():
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument(
+        '--setting',
+        choices=['mgf', 'committor'],
+        default='mgf',
+        help='Set setting type. Default: mgf',
+    )
+    parser.add_argument(
+        '--problem',
+        choices=['brownian', 'doublewell', 'skew', 'triplewell', 'ryckbell', 'fivewell'],
+        default='doublewell',
+        help='Set setting type. Default: mgf',
+    )
+    parser.add_argument(
         '--seed',
         type=int,
         help='Set the seed for RandomState',
