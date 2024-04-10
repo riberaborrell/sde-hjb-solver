@@ -48,3 +48,6 @@ class ControlledSDE(object):
 
         # target set indices
         self.get_target_set_idx = self.get_target_set_idx_committor
+
+    def __str__(self):
+        return f'{self.name}__{self.params_str}'

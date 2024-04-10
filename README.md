@@ -6,7 +6,7 @@ This Python repository contains the implementation of the finite difference meth
 
 ### Importance sampling problem
 Consider the stochastic process in $\mathbb{R}^d$ following the controlled dynamics for a given potential landscape $V$:
-$$\mathrm{d} X_s^u = (-\nabla V(X_s^u) + \sigma(X_s^u)  \,  u(X_s^u))\mathrm{d}s + \sigma(X_s^u) \mathrm{d}W_s, \qquad X_0^u = x.$$
+$$\mathrm{d} X_s^u = (-\nabla V(X_s^u) + \sigma(X_s^u) u(X_s^u))\mathrm{d}s + \sigma(X_s^u) \mathrm{d}W_s, \qquad X_0^u = x.$$
 
 We aim to estimate the following expectation value by doing importance sampling
 $$\Psi(x) = \mathbb{E}^x \bigl[I(X) \bigr] = \mathbb{E}^x \bigl[I(X^u) M^u \bigr], \quad I(X) = \exp \Bigl( -g(x_\tau) - \int\limits_0^\tau f(X_t) \mathrm{d}t \Bigl),$$

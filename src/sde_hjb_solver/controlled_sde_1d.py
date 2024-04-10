@@ -140,7 +140,8 @@ class ScaledBrownianMotionMGF1D(ScaledBrownianMotion1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'scaled-brownian-1d-mgf__sigma{:.1f}'.format(self.diffusion)
+        self.name = 'scaled-brownian-1d-mgf'
+        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
         # target set radius
         self.target_set_r = target_set_r
@@ -167,7 +168,8 @@ class BrownianMotionCommittor1D(ScaledBrownianMotion1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'brownian-1d-committor__sigma{:.1f}'.format(self.diffusion)
+        self.name = 'brownian-1d-committor'
+        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
         # target sets
         self.target_set_a = target_set_a
@@ -243,7 +245,8 @@ class DoubleWellMGF1D(DoubleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-1d-mgf__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name = 'doublewell-1d-mgf'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # target set
         self.target_set = target_set
@@ -261,7 +264,8 @@ class DoubleWellCommittor1D(DoubleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-1d-committor__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name = 'doublewell-1d-committor'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # target set
         self.target_set_a = target_set_a
@@ -299,7 +303,8 @@ class SkewDoubleWellMGF1D(SkewDoubleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'skewdoublewell-1d-mgf__beta{:.1f}'.format(self.beta)
+        self.name = 'skewdoublewell-1d-mgf'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # target set
         self.target_set = target_set
@@ -341,7 +346,8 @@ class TripleWellMGF1D(TripleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-1d-mgf__beta{:.1f}'.format(self.beta)
+        self.name = 'triplewell-1d-mgf'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # target set
         self.target_set = (self.m1 - 0.1, self.m1 + 0.1)
@@ -360,7 +366,8 @@ class TripleWellCommittor1D(TripleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-1d-committor__beta{:.1f}'.format(self.beta)
+        self.name = 'triplewell-1d-committor'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # target set
         if ts_a == 'm2':
@@ -408,12 +415,12 @@ class RyckBellMGF1D(RyckBell1D):
     '''
     '''
 
-    #def __init__(self, beta=1., lam=1.0, domain=None, epsilon=20):
     def __init__(self, lam=1.0, epsilon=20, **kwargs):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'ryck-bell-1d-mgf__beta{:.1f}'.format(self.beta)
+        self.name = 'ryck-bell-1d-mgf'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # target set
         self.epsilon = epsilon * np.pi / 180
@@ -459,7 +466,8 @@ class FiveWellMGF1D(FiveWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'fivewell-1d-mgf__beta{:.1f}'.format(self.beta)
+        self.name = 'fivewell-1d-mgf'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # target set
         self.target_set = (self.m1 - 0.1, self.m1 + 0.1)
@@ -478,7 +486,8 @@ class FiveWellCommittor1D(FiveWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'fivewell-1d-committor__beta{:.1f}'.format(self.beta)
+        self.name = 'fivewell-1d-committor'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # target set
         if ts_a == 'm2':

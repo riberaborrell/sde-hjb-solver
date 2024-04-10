@@ -178,7 +178,8 @@ class BrownianMotionCommittor2D(ScaledBrownianMotion2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'scaled-brownian-2d-committor__sigma{:.1f}'.format(self.diffusion)
+        self.name = 'scaled-brownian-2d-committor'
+        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
         # target set (in radial coordinates)
         assert radius_a < radius_b, ''
@@ -286,7 +287,8 @@ class DoubleWellMGF2D(DoubleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-2d-mgf__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
+        self.name = 'doublewell-2d-mgf'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
 
         # target set
         if target_set is not None:
@@ -316,7 +318,8 @@ class DoubleWellCommittor2D(DoubleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
+        self.name = 'doublewell-2d-committor'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
 
         # target sets
         if target_set_a is not None:
@@ -386,7 +389,8 @@ class TripleWellMGF2D(TripleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-2d-mgf__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name = 'triplewell-2d-mgf'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # set in target set condition function
         self.is_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -404,7 +408,8 @@ class TripleWellCommittor2D(TripleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-2d-committor__beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name = 'triplewell-2d-committor'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
 
         # set in target set condition function
         self.is_target_set_a_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -451,7 +456,8 @@ class MuellerBrownMGF2D(MuellerBrown2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'mueller-brown-2d-mgf__beta{:.1f}'.format(self.beta)
+        self.name = 'mueller-brown-2d-mgf'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # set in target set condition function
         self.is_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -468,7 +474,8 @@ class MuellerBrownCommittor2D(MuellerBrown2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'mueller-brown-2d-committor__beta{:.1f}'.format(self.beta)
+        self.name = 'mueller-brown-2d-committor'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # set in target set condition function
         self.is_target_set_a_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \

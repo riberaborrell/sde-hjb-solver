@@ -112,7 +112,7 @@ class SolverHJB1D(object):
         self.h = h
 
         # rel directory path
-        self.rel_dir_path = os.path.join(sde.name, 'h{:.0e}'.format(h))
+        self.rel_dir_path = os.path.join(sde.__str__(), 'h{:.0e}'.format(h))
 
         if load:
             self.load()
