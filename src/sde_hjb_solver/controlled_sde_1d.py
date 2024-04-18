@@ -39,6 +39,24 @@ class ControlledSDE1D(ControlledSDE):
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
+    def get_index_vectorized(self, x):
+        '''
+        '''
+        assert x.ndim == 2, ''
+        assert x.shape[1] == self.d, ''
+
+        # domain bounds
+        lb, ub = self.domain[0], self.domain[1]
+
+        # clip x to domain
+        x = np.clip(x, lb, ub)
+
+        # get index by truncation
+        idx = np.floor((x - lb) / self.h).astype(int)
+        idx = tuple([idx[:, i] for i in range(self.d)])
+        return idx
+
+
     def set_is_target_set_mgf(self):
         '''set is in target set condition function'''
         self.is_target_set = lambda x: (x >= self.target_set[0]) & \
