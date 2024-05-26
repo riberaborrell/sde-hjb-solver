@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from sde_hjb_solver.utils_path import save_data, load_data
+import sde_hjb_solver.figures
 
 class SolverHJB1D(object):
     ''' This class provides a solver of the following 1d BVP by using a
@@ -60,6 +61,10 @@ class SolverHJB1D(object):
 
     load()
 
+    unflatten_solution()
+
+    coarse_solution(h_coarse)
+
     get_psi_at_x(x)
 
     get_value_function_at_x(x)
@@ -114,8 +119,7 @@ class SolverHJB1D(object):
         # rel directory path
         self.rel_dir_path = os.path.join(sde.__str__(), 'h{:.0e}'.format(h))
 
-        if load:
-            self.load()
+        if load: self.load()
 
     def start_timer(self):
         ''' start timer
@@ -300,6 +304,24 @@ class SolverHJB1D(object):
             print('Attribute to load already exists and does not match')
             return False
 
+    def unflatten_solution(self):
+        self.psi = self.psi.reshape(-1, self.sde.d)
+        self.value_function = self.value_function.reshape(-1, self.sde.d)
+        self.u_opt = self.u_opt.reshape(-1, self.sde.d)
+
+    def coarse_solution(self, h_coarse):
+        ''' coarse solution'''
+
+        assert self.h < self.h_coarse, ''
+
+        # discretization step ratio
+        k = int(h_coarse / self.h)
+
+        self.psi = self.psi[::k]
+        self.value_function = self.value_function[::k]
+        self.u_opt = self.u_opt[::k]
+
+
     def get_psi_at_x(self, x):
         ''' evaluates solution of the BVP at x
 
@@ -428,8 +450,7 @@ class SolverHJB1D(object):
         ax.set_title(r'Estimation of $\Psi(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
+        if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.psi, lw=2.5)
         plt.show()
 
@@ -438,8 +459,7 @@ class SolverHJB1D(object):
         ax.set_title(r'Estimation of $\Phi(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
+        if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.value_function, lw=2.5)
         plt.show()
 
@@ -448,8 +468,7 @@ class SolverHJB1D(object):
         ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
+        if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.V, lw=2.5)
         ax.plot(self.sde.domain_h, self.perturbed_potential, lw=2.5)
         plt.show()
@@ -459,8 +478,7 @@ class SolverHJB1D(object):
         ax.set_title(r'Optimal control $u^*(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
+        if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.u_opt, lw=2.5)
         plt.show()
 
@@ -469,8 +487,7 @@ class SolverHJB1D(object):
         ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
+        if ylim is not None: ax.set_ylim(ylim)
         self.get_perturbed_potential_and_drift()
         ax.plot(self.sde.domain_h, self.perturbed_drift, lw=2.5)
         plt.show()
@@ -480,7 +497,6 @@ class SolverHJB1D(object):
         ax.set_title(r'Estimation of $\mathbb{E}^x[\tau]$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
-        if ylim is not None:
-            ax.set_ylim(ylim)
+        if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.mfht, lw=2.5)
         plt.show()

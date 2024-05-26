@@ -66,6 +66,8 @@ class SolverHJB2D(object):
 
     load()
 
+    coarse_solution(h_coarse)
+
     get_psi_at_x(x)
 
     get_value_function_at_x(x)
@@ -434,6 +436,18 @@ class SolverHJB2D(object):
             print('Attribute to load already exists and does not match')
             return False
 
+    def coarse_solution(self, h_coarse):
+        ''' coarse solution'''
+
+        assert self.h < self.h_coarse, ''
+
+        # discretization step ratio
+        k = int(h_coarse / self.h)
+
+        self.psi = self.psi[::k, ::k]
+        self.value_function = self.value_function[::k, ::k]
+        self.u_opt = self.u_opt[::k, ::k]
+
 
     def get_psi_at_x(self, x):
         ''' evaluates solution of the BVP at x
@@ -574,6 +588,7 @@ class SolverHJB2D(object):
             self.psi,
             levels=levels,
             extend='both',
+            cmap='plasma',
         )
         if isolines: ax.contour(cs, colors='k')
 
@@ -597,6 +612,7 @@ class SolverHJB2D(object):
             self.value_function,
             levels=levels,
             extend='both',
+            cmap='plasma',
         )
         if isolines: ax.contour(cs, colors='k')
 
@@ -620,6 +636,7 @@ class SolverHJB2D(object):
             self.perturbed_potential,
             levels=levels,
             extend='both',
+            cmap='Blues_r',
         )
         if isolines: ax.contour(cs, colors='k')
 
@@ -696,6 +713,7 @@ class SolverHJB2D(object):
             self.mfht,
             levels=levels,
             extend='both',
+            cmap='plasma',
         )
         if isolines: ax.contour(cs, colors='k')
 

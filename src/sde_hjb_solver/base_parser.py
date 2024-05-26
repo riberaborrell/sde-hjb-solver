@@ -39,13 +39,6 @@ def get_base_parser():
               of the double well potential. Default: 1.',
     )
     parser.add_argument(
-        '--alpha-j',
-        type=float,
-        default=1.,
-        help='Set barrier height of the j-th coordinate for the multidimensional extension \
-              of the double well potential. Default: 1.',
-    )
-    parser.add_argument(
         '--sigma',
         type=float,
         default=1.,
@@ -62,12 +55,6 @@ def get_base_parser():
         type=float,
         default=3.,
         help='Set nd quadratic one well i-th parameters. Default: 1.',
-    )
-    parser.add_argument(
-        '--nu-j',
-        type=float,
-        default=3.,
-        help='Set nd quadratic one well j-th parameters. Default: 1.',
     )
     parser.add_argument(
         '--h',
