@@ -12,7 +12,7 @@ def get_base_parser():
         '--problem',
         choices=['brownian', 'doublewell', 'skew', 'triplewell', 'ryckbell', 'fivewell'],
         default='doublewell',
-        help='Set setting type. Default: mgf',
+        help='Set potential. Default: doublewell',
     )
     parser.add_argument(
         '--seed',
@@ -32,11 +32,11 @@ def get_base_parser():
         help='Set theta parameter of Ornstein-Uhlenbeck. Default: 1.',
     )
     parser.add_argument(
-        '--alpha-i',
+        '--alpha',
         type=float,
-        default=1.,
-        help='Set barrier height of the i-th coordinate for the multidimensional extension \
-              of the double well potential. Default: 1.',
+        nargs='+',
+        default=[1.],
+        help='Set barrier height parameter of the given potential. Default: 1.',
     )
     parser.add_argument(
         '--sigma',

@@ -179,6 +179,10 @@ class ScaledBrownianMotion2D(ControlledSDE2D):
     def __init__(self, sigma=np.sqrt(2), **kwargs):
         super().__init__(**kwargs)
 
+        # log name
+        self.name = 'scaled-brownian-2d-'
+        self.params_str = 'sigma{:.1f}'.format(sigma)
+
         # drift and diffusion terms
         self.drift = lambda x: np.zeros(self.d)
         self.diffusion = sigma
@@ -195,8 +199,7 @@ class BrownianMotionCommittor2D(ScaledBrownianMotion2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'scaled-brownian-2d-committor'
-        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
+        self.name += 'committor'
 
         # target set (in radial coordinates)
         assert radius_a < radius_b, ''
@@ -251,7 +254,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
 
     def plot_2d_potential(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Potential $V(x)$')
+        ax.set_title(r'Potential $V(x)$', size=16)
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.domain[0])
@@ -268,6 +271,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
             pot,
             levels=levels,
             extend='both',
+            cmap='Blues_r',
         )
         if isolines: ax.contour(cs, colors='k')
 
@@ -280,6 +284,14 @@ class DoubleWell2D(OverdampedLangevinSDE2D):
     '''
     def __init__(self, alpha=np.array([1., 1.]), ts_pot_level=None, **kwargs):
         super().__init__(**kwargs)
+
+        # check alpha
+        assert alpha.size == 2, 'alpha must be an array of size 2'
+
+        # log name
+        self.name = 'doublewell-2d-'
+        self.params_str = 'beta{:.1f}_alpha-i{:.1f}_alpha-j{:.1f}' \
+                          ''.format(self.beta, alpha[0], alpha[1])
 
         # potential
         self.alpha = alpha
@@ -304,10 +316,10 @@ class DoubleWellMGF2D(DoubleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-2d-mgf'
-        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
+        self.name += 'mgf'
 
-        # target set
+        """
+        # rectangle target set
         if target_set is not None:
             self.target_set = target_set
         else:
@@ -319,9 +331,10 @@ class DoubleWellMGF2D(DoubleWell2D):
                                             & (x[:, 1] >= self.target_set[1, 0]) \
                                             & (x[:, 1] <= self.target_set[1, 1])
         """
+
+        # set in target set condition function
         self.is_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) \
-                                        & (x[:, 0] > 0) & (x[:, 1] > 0)
-        """
+                                          & (x[:, 0] > 0) & (x[:, 1] > 0)
 
         # moment generating function of the first hitting time setting
         self.set_mgf_setting(lam=lam)
@@ -335,8 +348,7 @@ class DoubleWellCommittor2D(DoubleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-2d-committor'
-        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha[0])
+        self.name += 'committor'
 
         # target sets
         if target_set_a is not None:
@@ -380,11 +392,18 @@ class DoubleWellCommittor2D(DoubleWell2D):
 class TripleWell2D(OverdampedLangevinSDE2D):
     ''' Overdamped langevin dynamics following a triple well potential
     '''
-    def __init__(self, alpha=1., ts_pot_level=-3.5, **kwargs):
+    def __init__(self, alpha=np.array([1.]), ts_pot_level=-3.5, **kwargs):
         super().__init__(**kwargs)
 
+        # check alpha
+        assert alpha.size == 1, 'alpha must be an array of size 1'
+        self.alpha = alpha[0]
+
+        # log name
+        self.name = 'triplewell-2d-'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+
         # potential
-        self.alpha = alpha
         self.potential = functools.partial(triple_well_2d, alpha=self.alpha)
         self.gradient = functools.partial(triple_well_gradient_2d, alpha=self.alpha)
 
@@ -406,8 +425,7 @@ class TripleWellMGF2D(TripleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-2d-mgf'
-        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name += 'mgf'
 
         # set in target set condition function
         self.is_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -425,8 +443,7 @@ class TripleWellCommittor2D(TripleWell2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-2d-committor'
-        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name += 'committor'
 
         # set in target set condition function
         self.is_target_set_a_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -443,6 +460,10 @@ class MuellerBrown2D(OverdampedLangevinSDE2D):
     '''
     def __init__(self, ts_pot_level=-100, **kwargs):
         super().__init__(**kwargs)
+
+        # log name
+        self.name = 'mueller-brown-2d-'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # potential
         self.potential = mueller_brown_2d
@@ -473,8 +494,7 @@ class MuellerBrownMGF2D(MuellerBrown2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'mueller-brown-2d-mgf'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'mgf'
 
         # set in target set condition function
         self.is_target_set_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \
@@ -491,8 +511,7 @@ class MuellerBrownCommittor2D(MuellerBrown2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'mueller-brown-2d-committor'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'committor'
 
         # set in target set condition function
         self.is_target_set_a_vect = lambda x: (self.potential(x) < self.ts_pot_level) & \

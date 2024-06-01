@@ -18,8 +18,9 @@ def main():
     elif args.setting == 'committor':
         SDE = DoubleWellCommittor1D
 
+
     # initialize sde
-    sde = SDE(beta=args.beta, alpha=args.alpha_i)
+    sde = SDE(beta=args.beta, alpha=np.array(args.alpha))
 
     # initialize hjb solver
     sol_hjb = SolverHJB1D(sde, h=args.h, load=args.load)

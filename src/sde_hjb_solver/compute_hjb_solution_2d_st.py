@@ -21,7 +21,7 @@ def main():
     # initialize sde
     sde = SDE(
         beta=args.beta,
-        alpha=np.full(2, args.alpha_i),
+        alpha=np.array(args.alpha),
         ts_pot_level=0.25,
     )
 

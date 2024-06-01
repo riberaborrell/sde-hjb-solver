@@ -29,6 +29,7 @@ class ControlledSDE1D(ControlledSDE):
 
         # discretized domain
         self.domain_h = np.around(np.arange(lb, ub + h, h), decimals=3)
+        #self.domain_h = (self.domain_h + h/2)[:-1]
 
         # number of indices per axis
         self.Nx = self.domain_h.shape[0]
@@ -142,6 +143,10 @@ class ScaledBrownianMotion1D(ControlledSDE1D):
     def __init__(self, sigma=np.sqrt(2), **kwargs):
         super().__init__(**kwargs)
 
+        # log name
+        self.name = 'scaled-brownian-1d-'
+        self.params_str = 'sigma{:.1f}'.format(sigma)
+
         # drift and diffusion terms
         self.drift = lambda x: 0
         self.diffusion = sigma
@@ -158,8 +163,7 @@ class ScaledBrownianMotionMGF1D(ScaledBrownianMotion1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'scaled-brownian-1d-mgf'
-        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
+        self.name += 'mgf'
 
         # target set radius
         self.target_set_r = target_set_r
@@ -186,8 +190,7 @@ class BrownianMotionCommittor1D(ScaledBrownianMotion1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'brownian-1d-committor'
-        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
+        self.name += 'committor'
 
         # target sets
         self.target_set_a = target_set_a
@@ -242,11 +245,18 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
 class DoubleWell1D(OverdampedLangevinSDE1D):
     ''' Overdamped langevin dynamics with double well potential.
     '''
-    def __init__(self, alpha=1., **kwargs):
+    def __init__(self, alpha=np.array([1.]), **kwargs):
         super().__init__(**kwargs)
 
+        # check alpha
+        assert alpha.size == 1, 'alpha must be an array of size 1'
+        self.alpha = alpha[0]
+
+        # log name
+        self.name = 'doublewell-1d-'
+        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+
         # potential
-        self.alpha = alpha
         self.potential = functools.partial(double_well, alpha=self.alpha)
         self.gradient = functools.partial(double_well_gradient, alpha=self.alpha)
 
@@ -263,8 +273,7 @@ class DoubleWellMGF1D(DoubleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-1d-mgf'
-        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name += 'mgf'
 
         # target set
         self.target_set = target_set
@@ -282,8 +291,7 @@ class DoubleWellCommittor1D(DoubleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'doublewell-1d-committor'
-        self.params_str = 'beta{:.1f}_alpha{:.1f}'.format(self.beta, self.alpha)
+        self.name += 'committor'
 
         # target set
         self.target_set_a = target_set_a
@@ -295,12 +303,18 @@ class DoubleWellCommittor1D(DoubleWell1D):
         # set in target set condition function
         self.set_is_target_set_committor()
 
+
+
 class SkewDoubleWell1D(OverdampedLangevinSDE1D):
     ''' Overdamped langevin dynamics with skew double well potential.
     '''
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # log name
+        self.name = 'skewdoublewell-1d-'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # potential
         self.potential = skew_double_well_1d
@@ -321,8 +335,7 @@ class SkewDoubleWellMGF1D(SkewDoubleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'skewdoublewell-1d-mgf'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'mgf'
 
         # target set
         self.target_set = target_set
@@ -339,6 +352,10 @@ class TripleWell1D(OverdampedLangevinSDE1D):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # log name
+        self.name = 'triplewell-1d-'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # potential
         self.potential = triple_well_1d
@@ -364,8 +381,7 @@ class TripleWellMGF1D(TripleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-1d-mgf'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'mgf'
 
         # target set
         self.target_set = (self.m1 - 0.1, self.m1 + 0.1)
@@ -384,8 +400,7 @@ class TripleWellCommittor1D(TripleWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'triplewell-1d-committor'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'committor'
 
         # target set
         if ts_a == 'm2':
@@ -408,6 +423,10 @@ class RyckBell1D(OverdampedLangevinSDE1D):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # log name
+        self.name = 'ryck-bell-1d-'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # potential
         self.potential = lambda x: ryck_bell_1d(x - np.pi)
@@ -437,8 +456,7 @@ class RyckBellMGF1D(RyckBell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'ryck-bell-1d-mgf'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'mgf'
 
         # target set
         self.epsilon = epsilon * np.pi / 180
@@ -457,6 +475,10 @@ class FiveWell1D(OverdampedLangevinSDE1D):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # log name
+        self.name = 'fivewell-1d-'
+        self.params_str = 'beta{:.1f}'.format(self.beta)
 
         # potential
         self.potential = five_well_1d
@@ -484,8 +506,7 @@ class FiveWellMGF1D(FiveWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'fivewell-1d-mgf'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'mgf'
 
         # target set
         self.target_set = (self.m1 - 0.1, self.m1 + 0.1)
@@ -504,8 +525,7 @@ class FiveWellCommittor1D(FiveWell1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'fivewell-1d-committor'
-        self.params_str = 'beta{:.1f}'.format(self.beta)
+        self.name += 'committor'
 
         # target set
         if ts_a == 'm2':
