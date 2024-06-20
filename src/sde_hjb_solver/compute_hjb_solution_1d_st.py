@@ -14,7 +14,7 @@ def main():
 
     # choose sde
     if args.setting == 'mgf':
-        SDE = DoubleWellMGF1D
+        SDE = DoubleWellMgf1D
     elif args.setting == 'committor':
         SDE = DoubleWellCommittor1D
 

@@ -150,7 +150,7 @@ class ControlledSDE2D(ControlledSDE):
 
     def plot_target_set(self, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Target set $\mathcal{T}$')
+        ax.set_title(r'Target set $C$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(self.domain[0])
@@ -162,7 +162,7 @@ class ControlledSDE2D(ControlledSDE):
         # target set
         if self.setting == 'mgf':
             set_t = x[self.ts_idx]
-            ax.scatter(set_t[:, 0], set_t[:, 1], label=r'$\mathcal{T}$')
+            ax.scatter(set_t[:, 0], set_t[:, 1], label=r'$C$')
         elif self.setting == 'committor':
             set_a = x[self.ts_a_idx]
             set_b = x[self.ts_b_idx]
@@ -176,22 +176,25 @@ class ScaledBrownianMotion2D(ControlledSDE2D):
     '''
     '''
 
-    def __init__(self, sigma=np.sqrt(2), **kwargs):
+    def __init__(self, beta: float = 1, **kwargs):
         super().__init__(**kwargs)
 
         # log name
         self.name = 'scaled-brownian-2d-'
-        self.params_str = 'sigma{:.1f}'.format(sigma)
 
         # drift and diffusion terms
         self.drift = lambda x: np.zeros(self.d)
-        self.diffusion = sigma
+        self.beta = beta
+        self.diffusion = np.sqrt(2 / self.beta)
 
         # domain
         if self.domain is None:
             self.domain = np.full((self.d, 2), [-3, 3])
 
-class BrownianMotionCommittor2D(ScaledBrownianMotion2D):
+        # parameters string
+        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
+
+class ScaledBrownianMotionCommittor2D(ScaledBrownianMotion2D):
     '''
     '''
 
@@ -252,9 +255,10 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
         # diffusion
         self.diffusion = np.sqrt(2 / self.beta)
 
-    def plot_2d_potential(self, levels=10, isolines=True, xlim=None, ylim=None):
+    def plot_2d_potential(self, levels=10, isolines=True, target_set_patch=None, x_init=None,
+                          xlim=None, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Potential $V(x)$', size=16)
+        ax.set_title(r'Potential $U_{pot}(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.domain[0])
@@ -274,6 +278,9 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
             cmap='Blues_r',
         )
         if isolines: ax.contour(cs, colors='k')
+        if target_set_patch is not None: ax.add_patch(target_set_patch)
+        if x_init is not None:
+            ax.plot(x_init[0], x_init[1], marker='x', c='grey', markersize=20, lw=5)
 
         # colorbar
         cbar = fig.colorbar(cs)
@@ -308,7 +315,7 @@ class DoubleWell2D(OverdampedLangevinSDE2D):
         # target set potential level
         self.ts_pot_level = ts_pot_level
 
-class DoubleWellMGF2D(DoubleWell2D):
+class DoubleWellMgf2D(DoubleWell2D):
     '''
     '''
 
@@ -417,7 +424,7 @@ class TripleWell2D(OverdampedLangevinSDE2D):
         # target set potential level
         self.ts_pot_level = ts_pot_level
 
-class TripleWellMGF2D(TripleWell2D):
+class TripleWellMgf2D(TripleWell2D):
     '''
     '''
 
@@ -486,7 +493,7 @@ class MuellerBrown2D(OverdampedLangevinSDE2D):
         # b = (0.623, 0.028)
 
 
-class MuellerBrownMGF2D(MuellerBrown2D):
+class MuellerBrownMgf2D(MuellerBrown2D):
     '''
     '''
 

@@ -140,22 +140,25 @@ class ScaledBrownianMotion1D(ControlledSDE1D):
     '''
     '''
 
-    def __init__(self, sigma=np.sqrt(2), **kwargs):
+    def __init__(self, beta: float = 1, **kwargs):
         super().__init__(**kwargs)
 
         # log name
         self.name = 'scaled-brownian-1d-'
-        self.params_str = 'sigma{:.1f}'.format(sigma)
 
         # drift and diffusion terms
         self.drift = lambda x: 0
-        self.diffusion = sigma
+        self.beta = beta
+        self.diffusion = np.sqrt(2 / self.beta)
 
         # domain
         if self.domain is None:
             self.domain = (-2, 2)
 
-class ScaledBrownianMotionMGF1D(ScaledBrownianMotion1D):
+        # parameters string
+        self.params_str = 'sigma{:.1f}'.format(self.diffusion)
+
+class ScaledBrownianMotionMgf1D(ScaledBrownianMotion1D):
     '''
     '''
 
@@ -175,14 +178,14 @@ class ScaledBrownianMotionMGF1D(ScaledBrownianMotion1D):
         self.is_target_set = lambda x: np.abs(x) >= self.target_set_r
 
     def u_opt_ana(self, x):
-        #TODO: generalize to arbitrary scaling factor sigma
+        #TODO: generalize to arbitrary scaling factor sigma.
         return np.where(
             self.is_target_set(x),
             0,
             np.sqrt(2) * (1 - np.exp(- 2*x)) /  (np.exp(- 2*x) + 1),
         )
 
-class BrownianMotionCommittor1D(ScaledBrownianMotion1D):
+class ScaledBrownianMotionCommittor1D(ScaledBrownianMotion1D):
     '''
     '''
 
@@ -206,6 +209,7 @@ class BrownianMotionCommittor1D(ScaledBrownianMotion1D):
         a = self.target_set_a[1]
         b = self.target_set_b[0]
 
+        #TODO: generalize to arbitrary scaling factor sigma
         return np.where(
             x < a,
             0,
@@ -216,7 +220,7 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
     '''
     '''
 
-    def __init__(self, beta=1., **kwargs):
+    def __init__(self, beta: float = 1., **kwargs):
         super().__init__(**kwargs)
 
         # overdamped langevin flag
@@ -230,7 +234,7 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
 
     def plot_1d_potential(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Potential $V(x)$')
+        ax.set_title(r'Potential $U_{pot}(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(self.domain)
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.domain)
@@ -267,7 +271,7 @@ class DoubleWell1D(OverdampedLangevinSDE1D):
         if self.domain is None:
             self.domain = (-2, 2)
 
-class DoubleWellMGF1D(DoubleWell1D):
+class DoubleWellMgf1D(DoubleWell1D):
 
     def __init__(self, lam=1.0, target_set=(1, 2), **kwargs):
         super().__init__(**kwargs)
@@ -327,7 +331,7 @@ class SkewDoubleWell1D(OverdampedLangevinSDE1D):
         if self.domain is None:
             self.domain = (-2, 2)
 
-class SkewDoubleWellMGF1D(SkewDoubleWell1D):
+class SkewDoubleWellMgf1D(SkewDoubleWell1D):
     ''' Moment generating function setting. We aim to compute the MFHT (see Hartmann2012).
     '''
 
@@ -373,7 +377,7 @@ class TripleWell1D(OverdampedLangevinSDE1D):
         self.m2 = -0.118062 # second lowest minimum
         self.m3 = 3.77699 # highest minimum
 
-class TripleWellMGF1D(TripleWell1D):
+class TripleWellMgf1D(TripleWell1D):
     '''
     '''
 
@@ -448,7 +452,7 @@ class RyckBell1D(OverdampedLangevinSDE1D):
         self.m_gauche1 = np.pi / 3 # local minimum
         self.m_gauche2 = 5 * np.pi / 3 # local minimum
 
-class RyckBellMGF1D(RyckBell1D):
+class RyckBellMgf1D(RyckBell1D):
     '''
     '''
 
@@ -498,7 +502,7 @@ class FiveWell1D(OverdampedLangevinSDE1D):
         self.m5 = 1.74915
         self.m3 = 3.77699 # highest minimum
 
-class FiveWellMGF1D(FiveWell1D):
+class FiveWellMgf1D(FiveWell1D):
     '''
     '''
 

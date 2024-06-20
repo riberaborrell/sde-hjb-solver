@@ -7,6 +7,7 @@ import scipy.sparse as sparse
 import scipy.sparse.linalg as linalg
 
 from sde_hjb_solver.utils_path import save_data, load_data
+import sde_hjb_solver.figures
 
 class SolverHJB2D(object):
     ''' This class provides a solver of the following 2d BVP by using a
