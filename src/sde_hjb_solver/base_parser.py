@@ -10,7 +10,7 @@ def get_base_parser():
     )
     parser.add_argument(
         '--problem',
-        choices=['brownian', 'doublewell', 'skew', 'triplewell', 'ryckbell', 'fivewell'],
+        choices=['brownian', 'doublewell', 'skew', 'triplewell', 'ryckbell', 'fivewell', 'mueller'],
         default='doublewell',
         help='Set potential. Default: doublewell',
     )

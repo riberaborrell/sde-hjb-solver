@@ -312,7 +312,7 @@ class SolverHJB1D(object):
     def coarse_solution(self, h_coarse):
         ''' coarse solution'''
 
-        assert self.h < self.h_coarse, ''
+        assert self.h < h_coarse, ''
 
         # discretization step ratio
         k = int(h_coarse / self.h)

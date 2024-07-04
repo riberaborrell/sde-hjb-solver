@@ -136,7 +136,7 @@ class ControlledSDE1D(ControlledSDE):
 
         return - (sol_plus.psi - sol_minus.psi) / (2 * delta)
 
-class ScaledBrownianMotion1D(ControlledSDE1D):
+class BrownianMotion1D(ControlledSDE1D):
     '''
     '''
 
@@ -144,7 +144,7 @@ class ScaledBrownianMotion1D(ControlledSDE1D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'scaled-brownian-1d-'
+        self.name = 'brownian-1d-'
 
         # drift and diffusion terms
         self.drift = lambda x: 0
@@ -158,34 +158,51 @@ class ScaledBrownianMotion1D(ControlledSDE1D):
         # parameters string
         self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
-class ScaledBrownianMotionMgf1D(ScaledBrownianMotion1D):
+class BrownianMotionMgf1D(BrownianMotion1D):
     '''
     '''
 
-    def __init__(self, lam=1.0, target_set_r=1., **kwargs):
+    def __init__(self, lam=1.0, target_set_r=1., target_set_c=0., **kwargs):
         super().__init__(**kwargs)
 
         # log name
         self.name += 'mgf'
 
-        # target set radius
+        # target set center and radius
+        self.target_set_c = target_set_c
         self.target_set_r = target_set_r
 
         # first hitting time setting
         self.set_mgf_setting(lam=lam)
 
         # set in target set condition function
-        self.is_target_set = lambda x: np.abs(x) >= self.target_set_r
+        self.is_target_set = lambda x: np.abs(x-self.target_set_c) >= self.target_set_r
+
+    def psi_ana(self, x):
+        c = self.target_set_c
+        return np.where(
+            self.is_target_set(x),
+            1,
+            np.cosh(np.sqrt(self.beta) * (x-c)) / np.cosh(np.sqrt(self.beta)),
+        )
 
     def u_opt_ana(self, x):
-        #TODO: generalize to arbitrary scaling factor sigma.
+        c = self.target_set_c
         return np.where(
             self.is_target_set(x),
             0,
-            np.sqrt(2) * (1 - np.exp(- 2*x)) /  (np.exp(- 2*x) + 1),
+            np.sqrt(2) * np.tanh(np.sqrt(self.beta) * (x-c)),
         )
 
-class ScaledBrownianMotionCommittor1D(ScaledBrownianMotion1D):
+    def mfht_ana(self, x):
+        c, r = self.target_set_c, self.target_set_r
+        return np.where(
+            self.is_target_set(x),
+            0,
+            (r**2 - np.abs(x-c)**2)/(self.diffusion**2),
+        )
+
+class BrownianMotionCommittor1D(BrownianMotion1D):
     '''
     '''
 

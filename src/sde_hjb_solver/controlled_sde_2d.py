@@ -172,7 +172,7 @@ class ControlledSDE2D(ControlledSDE):
         ax.legend(loc='upper right')
         plt.show()
 
-class ScaledBrownianMotion2D(ControlledSDE2D):
+class BrownianMotion2D(ControlledSDE2D):
     '''
     '''
 
@@ -180,7 +180,7 @@ class ScaledBrownianMotion2D(ControlledSDE2D):
         super().__init__(**kwargs)
 
         # log name
-        self.name = 'scaled-brownian-2d-'
+        self.name = 'brownian-2d-'
 
         # drift and diffusion terms
         self.drift = lambda x: np.zeros(self.d)
@@ -194,7 +194,56 @@ class ScaledBrownianMotion2D(ControlledSDE2D):
         # parameters string
         self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
-class ScaledBrownianMotionCommittor2D(ScaledBrownianMotion2D):
+class BrownianMotionMgf2D(BrownianMotion2D):
+    '''
+    '''
+
+    def __init__(self, lam=1.0, target_set_r=1., target_set_c=(0., 0.), **kwargs):
+        super().__init__(**kwargs)
+
+        # log name
+        self.name += 'mgf'
+
+        # target set center and radius
+        self.target_set_c = target_set_c
+        self.target_set_r = target_set_r
+
+        # first hitting time setting
+        self.set_mgf_setting(lam=lam)
+
+        # set in target set condition function
+        self.is_target_set = lambda x: np.linalg.norm(x - target_set_c) >= target_set_r
+        self.is_target_set_vect = lambda x: np.linalg.norm(x - target_set_c, axis=1) >= target_set_r
+
+    #TODO: generalize to arbitrary scaling factor sigma.
+    def psi_ana(self, x):
+        c = self.target_set_c
+        return np.where(
+            self.is_target_set_vect(x),
+            1,
+            #np.cosh(x) / np.cosh(1),# * 2 /  (np.exp(1) + np.exp(-1)),
+            np.cosh(np.sqrt(self.beta) * (x-c)) / np.cosh(np.sqrt(self.beta)),
+        )
+
+    #TODO: generalize to arbitrary scaling factor sigma.
+    def u_opt_ana(self, x):
+        return np.where(
+            self.is_target_set(x),
+            0,
+            self.diffusion * np.tanh(x),
+        )
+
+    def mfht_ana(self, x):
+        c, r = self.target_set_c, self.target_set_r
+        #a, b = c-r, c+r
+        return np.where(
+            self.is_target_set(x),
+            0,
+            #- (x - a)*(x - b) / (self.diffusion**2),
+            (r**2 - np.linalg.norm(x - self.target_set_c)**2)/(self.diffusion**2),
+        )
+
+class BrownianMotionCommittor2D(BrownianMotion2D):
     '''
     '''
 
