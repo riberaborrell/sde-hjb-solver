@@ -182,6 +182,9 @@ class BrownianMotion2D(ControlledSDE2D):
         # log name
         self.name = 'brownian-2d-'
 
+        # overdamped langevin flag
+        self.is_overdamped_langevin = False
+
         # drift and diffusion terms
         self.drift = lambda x: np.zeros(self.d)
         self.beta = beta
@@ -189,7 +192,7 @@ class BrownianMotion2D(ControlledSDE2D):
 
         # domain
         if self.domain is None:
-            self.domain = np.full((self.d, 2), [-3, 3])
+            self.domain = np.full((self.d, 2), [-1.5, 1.5])
 
         # parameters string
         self.params_str = 'sigma{:.1f}'.format(self.diffusion)

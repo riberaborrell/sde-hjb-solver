@@ -13,11 +13,29 @@ def main():
     args = get_base_parser().parse_args()
 
     # choose sde
-    if args.setting == 'mgf':
+    if args.problem == 'brownian' and args.setting == 'mgf':
+        SDE = BrownianMotionMgf1D
+    elif args.problem == 'brownian' and args.setting == 'committor':
+        SDE = BrownianMotionCommittor1D
+    elif args.problem == 'doublewell' and args.setting == 'mgf':
         SDE = DoubleWellMgf1D
-    elif args.setting == 'committor':
+    elif args.problem == 'doublewell' and args.setting == 'committor':
         SDE = DoubleWellCommittor1D
+    elif args.problem == 'triplewell' and args.setting == 'mgf':
+        SDE = TripleWellMgf1D
+    elif args.problem == 'triplewell' and args.setting == 'committor':
+        SDE = TripleWellCommittor1D
+    elif args.problem == 'fivewell' and args.setting == 'mgf':
+        SDE = FiveWellMgf1D
+    elif args.problem == 'fivewell' and args.setting == 'committor':
+        SDE = FiveWellCommittor1D
+    elif args.problem == 'skew' and args.setting == 'mgf':
+        SDE = SkewDoubleWellMgf1D
+    elif args.problem == 'ryckbell' and args.setting == 'mgf':
+        SDE = RyckBellMgf1D
 
+    else:
+        raise NotImplementedError
 
     # initialize sde
     sde = SDE(beta=args.beta, alpha=np.array(args.alpha))

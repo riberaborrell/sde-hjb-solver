@@ -211,7 +211,7 @@ class SolverHJB1D(object):
                     A[k, k - 1] = -1
 
         # solve linear system and save
-        self.psi = np.linalg.solve(A, b)
+        self.psi = np.linalg.solve(A, b).astype(np.float32)
         self.solved = True
 
         # stop timer
@@ -238,7 +238,7 @@ class SolverHJB1D(object):
         sigma = self.sde.diffusion
 
         # preallocate u_opt
-        self.u_opt = np.zeros(self.sde.Nh)
+        self.u_opt = np.zeros(self.sde.Nh, dtype=np.float32)
 
         self.u_opt[1: -1] = - sigma \
                           * (self.value_function[2:] - self.value_function[:-2]) \

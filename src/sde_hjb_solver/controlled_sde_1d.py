@@ -146,6 +146,9 @@ class BrownianMotion1D(ControlledSDE1D):
         # log name
         self.name = 'brownian-1d-'
 
+        # overdamped langevin flag
+        self.is_overdamped_langevin = False
+
         # drift and diffusion terms
         self.drift = lambda x: 0
         self.beta = beta
@@ -153,7 +156,7 @@ class BrownianMotion1D(ControlledSDE1D):
 
         # domain
         if self.domain is None:
-            self.domain = (-2, 2)
+            self.domain = (-1.5, 1.5)
 
         # parameters string
         self.params_str = 'sigma{:.1f}'.format(self.diffusion)

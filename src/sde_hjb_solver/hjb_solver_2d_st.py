@@ -324,7 +324,7 @@ class SolverHJB2D(object):
 
         # solve linear system and save
         psi = linalg.spsolve(A.tocsc(), b)
-        self.psi = psi.reshape(self.sde.Nx)
+        self.psi = psi.reshape(self.sde.Nx).astype(np.float32)
         self.solved = True
 
         # stop timer
@@ -347,7 +347,7 @@ class SolverHJB2D(object):
         sigma = self.sde.diffusion
 
         # preallocate optimal control
-        self.u_opt = np.zeros(self.sde.Nx + (self.sde.d, ))
+        self.u_opt = np.zeros(self.sde.Nx + (self.sde.d, ), dtype=np.float32)
 
         for i in range(self.sde.d):
 

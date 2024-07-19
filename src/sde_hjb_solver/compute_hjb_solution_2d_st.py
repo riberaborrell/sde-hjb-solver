@@ -13,12 +13,24 @@ def main():
     args = get_parser().parse_args()
 
     # choose sde
-    if args.setting == 'mgf':
+    if args.problem == 'brownian' and args.setting == 'mgf':
+        SDE = BrownianMotionMgf2D
+    elif args.problem == 'brownian' and args.setting == 'committor':
+        SDE = BrownianMotionCommittor2D
+    elif args.problem == 'doublewell' and args.setting == 'mgf':
         SDE = DoubleWellMgf2D
-        #SDE = TripleWellMgf2D
-    elif args.setting == 'committor':
+    elif args.problem == 'doublewell' and args.setting == 'committor':
         SDE = DoubleWellCommittor2D
-        #SDE = TripleWellCommittor2D
+    elif args.problem == 'triplewell' and args.setting == 'mgf':
+        SDE = TripleWellMgf2D
+    elif args.problem == 'triplewell' and args.setting == 'committor':
+        SDE = TripleWellCommittor2D
+    elif args.problem == 'mueller' and args.setting == 'mgf':
+        SDE = MuellerBrownMgf2D
+    elif args.problem == 'mueller' and args.setting == 'committor':
+        SDE = MuellerBrownCommittor2D
+    else:
+        raise NotImplementedError
 
 
     # initialize sde
@@ -50,10 +62,10 @@ def main():
     if not args.plot:
         return
 
-    sde.plot_2d_potential()
 
     # evaluate in grid
     if sol_hjb.sde.is_overdamped_langevin:
+        sde.plot_2d_potential()
         sol_hjb.get_perturbed_potential_and_drift()
 
     sol_hjb.plot_2d_psi()
