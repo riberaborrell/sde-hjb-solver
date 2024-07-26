@@ -245,6 +245,7 @@ class SolverHJB1D(object):
                           / (2 * self.sde.h)
         self.u_opt[0] = self.u_opt[1]
         self.u_opt[-1] = self.u_opt[-2]
+        self.u_opt = self.u_opt.reshape(-1, self.sde.d)
 
     def save(self):
         ''' saves some attributes as arrays into a .npz file
@@ -377,7 +378,7 @@ class SolverHJB1D(object):
         idx = self.sde.get_idx(x)
 
         # evaluate optimal control at x
-        return self.u_opt[idx] if hasattr(self, 'u_opt') else None
+        return self.u_opt[idx, 0] if hasattr(self, 'u_opt') else None
 
     def get_perturbed_potential_and_drift(self):
         ''' computes the potential, bias potential, controlled potential, gradient,
@@ -396,7 +397,7 @@ class SolverHJB1D(object):
         self.perturbed_potential = self.V + self.bias_potential
 
         # gradient and tilted drift
-        self.dV = np.squeeze(self.sde.gradient(x))
+        self.dV = self.sde.gradient(x)
         self.perturbed_drift = - self.dV + sigma * self.u_opt
 
 
@@ -437,7 +438,7 @@ class SolverHJB1D(object):
 
         idx_u_max = np.argmax(self.u_opt)
         x_u_max = self.get_x(idx_u_max)
-        u_opt_max = self.u_opt[idx_u_max]
+        u_opt_max = self.u_opt[idx_u_max, 0]
         print('argmax_x u_opt(x): {:2.3f}'.format(x_u_max))
         print('max_x u_opt(x): {:2.3f}'.format(u_opt_max))
 
