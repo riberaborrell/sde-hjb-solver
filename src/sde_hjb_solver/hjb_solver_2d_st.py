@@ -431,16 +431,21 @@ class SolverHJB2D(object):
                     else:
                         setattr(self, attr_name, attr)
 
-            return True
-
         except:
             print('Attribute to load already exists and does not match')
             return False
 
+        # compute perturbed potential and drift
+        if self.sde.is_overdamped_langevin:
+            self.get_perturbed_potential_and_drift()
+
+        return True
+
+
     def coarse_solution(self, h_coarse):
         ''' coarse solution'''
 
-        assert self.h < h_coarse, ''
+        assert self.h <= h_coarse, ''
 
         # discretization step ratio
         k = int(h_coarse / self.h)
@@ -449,6 +454,11 @@ class SolverHJB2D(object):
         self.value_function = self.value_function[::k, ::k]
         self.u_opt = self.u_opt[::k, ::k]
 
+        if self.sde.is_overdamped_langevin:
+            self.V = self.V[::k]
+            self.perturbed_potential = self.perturbed_potential[::k]
+            self.dV = self.dV[::k]
+            self.perturbed_drift = self.perturbed_drift[::k]
 
     def get_psi_at_x(self, x):
         ''' evaluates solution of the BVP at x
