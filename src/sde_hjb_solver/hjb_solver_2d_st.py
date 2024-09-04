@@ -455,10 +455,10 @@ class SolverHJB2D(object):
         self.u_opt = self.u_opt[::k, ::k]
 
         if self.sde.is_overdamped_langevin:
-            self.V = self.V[::k]
-            self.perturbed_potential = self.perturbed_potential[::k]
-            self.dV = self.dV[::k]
-            self.perturbed_drift = self.perturbed_drift[::k]
+            self.V = self.V[::k, ::k]
+            self.perturbed_potential = self.perturbed_potential[::k, ::k]
+            self.dV = self.dV[::k, ::k]
+            self.perturbed_drift = self.perturbed_drift[::k, ::k]
 
     def get_psi_at_x(self, x):
         ''' evaluates solution of the BVP at x
