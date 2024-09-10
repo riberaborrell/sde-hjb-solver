@@ -7,6 +7,9 @@ src/sde_hjb_solver/config.py
 # notebooks
 notebooks/
 
+# checkpoints
+**/*.ipynb_checkpoints/
+
 # pyenv version file
 .python-version
 
