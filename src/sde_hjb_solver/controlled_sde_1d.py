@@ -420,20 +420,14 @@ class TripleWellCommittor1D(TripleWell1D):
     '''
     '''
 
-    def __init__(self, epsilon=1e-10, ts_a='m2', **kwargs):
+    def __init__(self, epsilon=1e-10, **kwargs):
         super().__init__(**kwargs)
 
         # log name
         self.name += 'committor'
 
-        # target set
-        if ts_a == 'm2':
-            ts_a_c = self.m2
-        elif ts_a == 'm3':
-            ts_a_c = self.m3
-
-        self.target_set_a = (ts_a_c - 0.1, ts_a_c + 0.1)
-        self.target_set_b = (self.m1 - 0.1, self.m1 + 0.1)
+        self.target_set_a = (self.m1 - 0.1, self.m1 + 0.1)
+        self.target_set_b = (self.m3 - 0.1, self.m3 + 0.1)
 
         # committor setting
         self.set_committor_setting(epsilon)
