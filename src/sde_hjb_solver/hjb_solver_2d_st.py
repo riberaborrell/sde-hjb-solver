@@ -289,7 +289,7 @@ class SolverHJB2D(object):
             # impose condition on ∂S
             elif k in self.sde.ts_idx and not k in self.sde.boundary_idx:
                 A[k, k] = 1
-                b[k] = np.exp(- self.sde.g(x))
+                b[k] = np.exp(- self.sde.g(x).item())
 
             # stability condition on the boundary: Psi should be flat
             elif k in self.sde.boundary_idx:
@@ -634,7 +634,7 @@ class SolverHJB2D(object):
 
     def plot_2d_perturbed_potential(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
+        ax.set_title(r'Perturbed potential $(U_{pot} + U_{bias})(x)$')
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
@@ -697,7 +697,7 @@ class SolverHJB2D(object):
         )
 
         # colorbar
-        fig.colorbar(sm)
+        fig.colorbar(sm, ax=ax)
 
         plt.show()
 

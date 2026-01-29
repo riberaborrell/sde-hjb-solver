@@ -37,7 +37,6 @@ def main():
     sde = SDE(
         beta=args.beta,
         alpha=np.array(args.alpha),
-        ts_pot_level=0.25,
     )
 
     # initialize hjb solver

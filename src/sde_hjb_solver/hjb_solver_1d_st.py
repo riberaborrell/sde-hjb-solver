@@ -475,7 +475,7 @@ class SolverHJB1D(object):
 
     def plot_1d_perturbed_potential(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Perturbed potential $(V + V_{bias})(x)$')
+        ax.set_title(r'Perturbed potential $(U_{pot} + U_{bias})(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None: ax.set_ylim(ylim)
@@ -494,7 +494,7 @@ class SolverHJB1D(object):
 
     def plot_1d_perturbed_drift(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
+        ax.set_title(r'Perturbed drift $\nabla(U_{pot} + U_{bias})(x)$')
         ax.set_xlabel('x')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None: ax.set_ylim(ylim)

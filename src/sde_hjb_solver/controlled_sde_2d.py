@@ -150,7 +150,8 @@ class ControlledSDE2D(ControlledSDE):
 
     def plot_target_set(self, ylim=None):
         fig, ax = plt.subplots()
-        ax.set_title(r'Target set $C$')
+        title = r'Target set $A \cup B$' if self.setting == 'committor' else r'Target set $C$'
+        ax.set_title(title)
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(self.domain[0])
@@ -341,7 +342,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
 class DoubleWell2D(OverdampedLangevinSDE2D):
     '''
     '''
-    def __init__(self, alpha=np.array([1., 1.]), ts_pot_level=None, **kwargs):
+    def __init__(self, alpha=np.array([1., 1.]), ts_pot_level=0.25, **kwargs):
         super().__init__(**kwargs)
 
         # check alpha
