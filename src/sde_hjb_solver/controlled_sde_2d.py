@@ -171,7 +171,7 @@ class ControlledSDE2D(ControlledSDE):
             ax.scatter(set_b[:, 0], set_b[:, 1], label=r'$B$')
 
         ax.legend(loc='upper right')
-        plt.show()
+        return fig, ax
 
 class BrownianMotion2D(ControlledSDE2D):
     '''
@@ -315,7 +315,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.domain[0])
-        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.domain[1])
+        ax.set_ylim(ylim) if ylim is not None else ax.set_ylim(self.domain[1])
 
         # flat domain
         x = self.domain_h.reshape(self.Nh, self.d)
@@ -329,6 +329,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
             levels=levels,
             extend='both',
             cmap='Blues_r',
+            alpha=0.8,
         )
         if isolines: ax.contour(cs, colors='k')
         if target_set_patch is not None: ax.add_patch(target_set_patch)
@@ -337,7 +338,7 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
 
         # colorbar
         cbar = fig.colorbar(cs)
-        plt.show()
+        return fig, ax
 
 class DoubleWell2D(OverdampedLangevinSDE2D):
     '''

@@ -263,7 +263,7 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
         x = np.expand_dims(self.domain_h, axis=1)
         y = np.squeeze(self.potential(x))
         ax.plot(x, y, lw=2.5)
-        plt.show()
+        return fig, ax
 
 
 class DoubleWell1D(OverdampedLangevinSDE1D):

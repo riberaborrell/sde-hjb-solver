@@ -462,7 +462,7 @@ class SolverHJB1D(object):
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.psi, lw=2.5)
-        plt.show()
+        return fig, ax
 
     def plot_1d_value_function(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -471,7 +471,7 @@ class SolverHJB1D(object):
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.value_function, lw=2.5)
-        plt.show()
+        return fig, ax
 
     def plot_1d_perturbed_potential(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -481,7 +481,7 @@ class SolverHJB1D(object):
         if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.V, lw=2.5)
         ax.plot(self.sde.domain_h, self.perturbed_potential, lw=2.5)
-        plt.show()
+        return fig, ax
 
     def plot_1d_control(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -490,7 +490,7 @@ class SolverHJB1D(object):
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.u_opt, lw=2.5)
-        plt.show()
+        return fig, ax
 
     def plot_1d_perturbed_drift(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -500,7 +500,7 @@ class SolverHJB1D(object):
         if ylim is not None: ax.set_ylim(ylim)
         self.get_perturbed_potential_and_drift()
         ax.plot(self.sde.domain_h, self.perturbed_drift, lw=2.5)
-        plt.show()
+        return fig, ax
 
     def plot_1d_mfht(self, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -509,4 +509,4 @@ class SolverHJB1D(object):
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain)
         if ylim is not None: ax.set_ylim(ylim)
         ax.plot(self.sde.domain_h, self.mfht, lw=2.5)
-        plt.show()
+        return fig, ax

@@ -590,7 +590,7 @@ class SolverHJB2D(object):
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
-        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
+        ax.set_ylim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
@@ -606,7 +606,7 @@ class SolverHJB2D(object):
         # colorbar
         cbar = fig.colorbar(cs)
 
-        plt.show()
+        return fig, ax
 
     def plot_2d_value_function(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -614,7 +614,7 @@ class SolverHJB2D(object):
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
-        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
+        ax.set_ylim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
@@ -630,7 +630,7 @@ class SolverHJB2D(object):
         # colorbar
         cbar = fig.colorbar(cs)
 
-        plt.show()
+        return fig, ax
 
     def plot_2d_perturbed_potential(self, levels=10, isolines=True, xlim=None, ylim=None):
         fig, ax = plt.subplots()
@@ -638,7 +638,7 @@ class SolverHJB2D(object):
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
-        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
+        ax.set_ylim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         # contour f
         cs = ax.contourf(
@@ -654,7 +654,7 @@ class SolverHJB2D(object):
         # colorbar
         cbar = fig.colorbar(cs)
 
-        plt.show()
+        return fig, ax
 
     def plot_2d_control(self, scale=None, width=0.005, xlim=None, ylim=None):
         from matplotlib import colors, cm
@@ -664,7 +664,7 @@ class SolverHJB2D(object):
         ax.set_xlabel(r'$x_1$')
         ax.set_ylabel(r'$x_2$')
         ax.set_xlim(xlim) if xlim is not None else ax.set_xlim(self.sde.domain[0])
-        ax.set_xlim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
+        ax.set_ylim(ylim) if ylim is not None else ax.set_ylim(self.sde.domain[1])
 
         X = self.sde.domain_h[:, :, 0]
         Y = self.sde.domain_h[:, :, 1]
@@ -699,14 +699,14 @@ class SolverHJB2D(object):
         # colorbar
         fig.colorbar(sm, ax=ax)
 
-        plt.show()
+        return fig, ax
 
     """
     def plot_2d_perturbed_drift(self):
         fig, ax = plt.subplots()
         ax.set_title(r'Perturbed drift $\nabla(V + V_{bias})(x)$')
         self.get_perturbed_potential_and_drift()
-        plt.show()
+        return fig, ax
     """
 
     def plot_2d_mfht(self, levels=10, isolines=True, xlim=None, ylim=None):
@@ -731,4 +731,4 @@ class SolverHJB2D(object):
         # colorbar
         cbar = fig.colorbar(cs)
 
-        plt.show()
+        return fig, ax
