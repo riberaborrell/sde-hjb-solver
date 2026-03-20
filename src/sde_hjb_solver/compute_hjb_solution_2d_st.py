@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+import matplotlib.pyplot as plt
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_2d_st import SolverHJB2D
@@ -61,22 +63,29 @@ def main():
     if not args.plot:
         return
 
-
     # evaluate in grid
     if sol_hjb.sde.is_overdamped_langevin:
-        sde.plot_2d_potential()
         sol_hjb.get_perturbed_potential_and_drift()
 
-    sol_hjb.plot_2d_psi()
-    sol_hjb.plot_2d_value_function()
-    sol_hjb.plot_2d_control()
+    @contextmanager
+    def show_plots():
+        yield
+        plt.show()
 
-    if sol_hjb.sde.is_overdamped_langevin:
-        sol_hjb.plot_2d_perturbed_potential()
-        #sol_hjb.plot_2d_perturbed_drift()
+    with show_plots():
+        if sde.is_overdamped_langevin:
+            sde.plot_2d_potential()
 
-    if hasattr(sol_hjb, 'mfht'):
-        sol_hjb.plot_2d_mfht()
+        sol_hjb.plot_2d_psi()
+        sol_hjb.plot_2d_value_function()
+        sol_hjb.plot_2d_control()
+
+        if sde.is_overdamped_langevin:
+            sol_hjb.plot_2d_perturbed_potential()
+            #sol_hjb.plot_2d_perturbed_drift()
+
+        if hasattr(sol_hjb, 'mfht'):
+            sol_hjb.plot_2d_mfht()
 
 if __name__ == "__main__":
     main()

@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+import matplotlib.pyplot as plt
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_1d_st import SolverHJB1D
@@ -10,7 +12,7 @@ def get_parser():
     return parser
 
 def main():
-    args = get_base_parser().parse_args()
+    args = get_parser().parse_args()
 
     # choose sde
     if args.problem == 'brownian' and args.setting == 'mgf':
@@ -65,16 +67,25 @@ def main():
     if sol_hjb.sde.is_overdamped_langevin:
         sol_hjb.get_perturbed_potential_and_drift()
 
-    sol_hjb.plot_1d_psi()
-    sol_hjb.plot_1d_value_function()
-    sol_hjb.plot_1d_control()
+    @contextmanager
+    def show_plots():
+        yield
+        plt.show()
 
-    if sol_hjb.sde.is_overdamped_langevin:
-        sol_hjb.plot_1d_perturbed_potential()
-        sol_hjb.plot_1d_perturbed_drift()
+    with show_plots():
+        if sde.is_overdamped_langevin:
+            sde.plot_1d_potential()
 
-    if hasattr(sol_hjb, 'mfht'):
-        sol_hjb.plot_1d_mfht()
+        sol_hjb.plot_1d_psi()
+        sol_hjb.plot_1d_value_function()
+        sol_hjb.plot_1d_control()
+
+        if sde.is_overdamped_langevin:
+            sol_hjb.plot_1d_perturbed_potential()
+            sol_hjb.plot_1d_perturbed_drift()
+
+        if hasattr(sol_hjb, 'mfht'):
+            sol_hjb.plot_1d_mfht()
 
 if __name__ == "__main__":
     main()
