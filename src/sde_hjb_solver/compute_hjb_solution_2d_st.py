@@ -3,7 +3,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from sde_hjb_solver.hjb_solver_2d_st import SolverHJB2D
-from sde_hjb_solver.controlled_sde_2d import *
+from sde_hjb_solver.controlled_sde_2d import (
+    BrownianMotionMgf2D,
+    BrownianMotionCommittor2D,
+    DoubleWellMgf2D,
+    DoubleWellCommittor2D,
+    TripleWellMgf2D,
+    TripleWellCommittor2D,
+    MuellerBrownMgf2D,
+    MuellerBrownCommittor2D,
+)
+
 from sde_hjb_solver.base_parser import get_base_parser
 
 def get_parser():

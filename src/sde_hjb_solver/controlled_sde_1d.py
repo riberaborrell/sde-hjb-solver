@@ -3,7 +3,14 @@ import functools
 import matplotlib.pyplot as plt
 import numpy as np
 
-from sde_hjb_solver.functions import *
+from sde_hjb_solver.functions import (
+    double_well, double_well_gradient,
+    skew_double_well_1d, skew_double_well_gradient_1d,
+    triple_well_1d, triple_well_gradient_1d,
+    ryck_bell_1d, ryck_bell_gradient_1d,
+    five_well_1d, five_well_gradient_1d,
+)
+
 from sde_hjb_solver.controlled_sde import ControlledSDE
 
 class ControlledSDE1D(ControlledSDE):

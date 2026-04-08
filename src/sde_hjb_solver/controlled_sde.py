@@ -1,6 +1,6 @@
 import functools
 
-from sde_hjb_solver.functions import *
+from sde_hjb_solver.functions import constant, quadratic_one_well
 
 class ControlledSDE(object):
     '''
