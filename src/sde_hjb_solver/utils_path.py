@@ -1,20 +1,22 @@
 import os
 import shutil
 import sys
+from pathlib import Path
 
 import numpy as np
-
-from sde_hjb_solver.config import PROJECT_ROOT_DIR, DATA_ROOT_DIR
+from dotenv import load_dotenv
 
 def get_project_dir():
     ''' returns the absolute path of the repository's directory
     '''
-    return PROJECT_ROOT_DIR
+    return Path(__file__).resolve().parent
 
 def get_data_dir():
     ''' returns the absolute path of the repository's data directory
     '''
-    return DATA_ROOT_DIR
+    # load .env file
+    load_dotenv()
+    return os.getenv('SDE_HJB_DATA_DIR', get_project_dir() / 'data')
 
 def make_dir_path(dir_path):
     ''' Create directories of the given path if they do not already exist

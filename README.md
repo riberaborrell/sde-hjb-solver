@@ -1,4 +1,4 @@
-sd# sde-hjb-solver
+# sde-hjb-solver
 
 This Python repository contains the implementation of the finite difference method for solving the Hamilton-Jacobi-Bellman (HJB) equation associated to the importance sampling (IS) problem of diffusion processes.
 
@@ -51,9 +51,10 @@ make venv
 source venv/bin/activate
 ```
 
-4) create config.py file and edit it
+4) create .env file containing the path of your data folder
+(not even need if the data folder is just data/ inside the project) 
 ```
-cp src/sde_hjb_solver/config_template.py src/sde_hjb_solver/config.py
+SDE_HJB_DATA_DIR=/data/abs/path
 ```
 
 
