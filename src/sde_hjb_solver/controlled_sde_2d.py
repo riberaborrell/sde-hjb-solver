@@ -1,4 +1,5 @@
 import functools
+from typing import Any, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,19 +13,21 @@ from sde_hjb_solver.functions import (
 from sde_hjb_solver.controlled_sde import ControlledSDE
 
 class ControlledSDE2D(ControlledSDE):
-    '''
-    '''
+    """Base class for 2D controlled SDEs."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
 
         # dimension
         kwargs.update(d=2)
 
         super().__init__(**kwargs)
 
-    def discretize_domain_2d(self, h):
-        '''
-        '''
+    def discretize_domain_2d(self, h: float) -> None:
+        """Discretize the 2D domain into a uniform grid.
+
+        Args:
+            h: Grid step size.
+        """
 
         # discretization step
         self.h = h
@@ -62,9 +65,15 @@ class ControlledSDE2D(ControlledSDE):
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
-    def get_index_vectorized(self, x):
-        '''
-        '''
+    def get_index_vectorized(self, x: np.ndarray) -> Tuple[np.ndarray, ...]:
+        """Return grid indices for a batch of points.
+
+        Args:
+            x: Array of shape (N, d) containing input points.
+
+        Returns:
+            Tuple of index arrays for each axis.
+        """
         assert x.ndim == 2, 'x must be a 2D array of shape (N, d)'
         assert x.shape[1] == self.d, f'Expected x.shape[1] == {self.d}, got {x.shape[1]}'
 
@@ -80,18 +89,16 @@ class ControlledSDE2D(ControlledSDE):
         return idx
 
 
-    def get_target_set_idx_mgf(self):
-        '''
-        '''
+    def get_target_set_idx_mgf(self) -> None:
+        """Compute indices of the discretized domain in the MGF target set."""
         # flatten domain_h
         x = self.domain_h.reshape(self.Nh, self.d)
 
         # get index
         self.ts_idx = np.where(self.is_target_set_vect(x))[0]
 
-    def get_target_set_idx_committor(self):
-        '''
-        '''
+    def get_target_set_idx_committor(self) -> None:
+        """Compute indices of the discretized domain in the committor target sets."""
 
         # flatten domain_h
         x = self.domain_h.reshape(self.Nh, self.d)
@@ -103,9 +110,15 @@ class ControlledSDE2D(ControlledSDE):
             self.is_target_set_a_vect(x) | self.is_target_set_b_vect(x)
         )[0]
 
-    def get_idx(self, x):
-        ''' get index of the grid point which approximates x
-        '''
+    def get_idx(self, x: Union[float, np.ndarray]) -> Union[int, np.ndarray, tuple]:
+        """Get index of the grid point that approximates x.
+
+        Args:
+            x: Scalar or 1D array input.
+
+        Returns:
+            Grid index/indices for x.
+        """
         x = np.asarray(x)
         is_scalar = False
 
@@ -125,7 +138,8 @@ class ControlledSDE2D(ControlledSDE):
         else:
             return tuple(idx)
 
-    def get_idx_truncate(self, x):
+    def get_idx_truncate(self, x: np.ndarray) -> np.ndarray:
+        """Return grid indices by truncation within domain bounds."""
         x = np.clip(x, self.domain[0], self.domain[1])
         idx = np.floor((x - self.domain[0]) / self.h).astype(int)
         return idx
@@ -134,10 +148,15 @@ class ControlledSDE2D(ControlledSDE):
         #) / self.h).astype(int)
 
 
-    def compute_mfht(self, delta=0.001):
-        ''' estimates the expected first hitting time by finite differences of the quantity
-            of interest psi(x)
-        '''
+    def compute_mfht(self, delta: float = 0.001) -> np.ndarray:
+        """Estimate the mean first hitting time by finite differences.
+
+        Args:
+            delta: Small perturbation for the MGF parameter.
+
+        Returns:
+            Estimated mean first hitting time values on the grid.
+        """
         from sde_hjb_solver.hjb_solver_2d_st import SolverHJB2D
         from copy import copy
 
@@ -153,7 +172,18 @@ class ControlledSDE2D(ControlledSDE):
 
         return - (sol_plus.psi - sol_minus.psi) / (2 * delta)
 
-    def plot_target_set(self, ylim=None):
+    def plot_target_set(
+        self,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the target set on the discretized domain.
+
+        Args:
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         title = r'Target set $A \cup B$' if self.setting == 'committor' else r'Target set $C$'
         ax.set_title(title)
@@ -179,10 +209,9 @@ class ControlledSDE2D(ControlledSDE):
         return fig, ax
 
 class BrownianMotion2D(ControlledSDE2D):
-    '''
-    '''
+    """2D Brownian motion with constant diffusion."""
 
-    def __init__(self, beta: float = 1, **kwargs):
+    def __init__(self, beta: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -204,10 +233,15 @@ class BrownianMotion2D(ControlledSDE2D):
         self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
 class BrownianMotionMgf2D(BrownianMotion2D):
-    '''
-    '''
+    """MGF setting for 2D Brownian motion."""
 
-    def __init__(self, lam=1.0, target_set_r=1., target_set_c=(0., 0.), **kwargs):
+    def __init__(
+        self,
+        lam: float = 1.0,
+        target_set_r: float = 1.0,
+        target_set_c: Tuple[float, float] = (0.0, 0.0),
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -225,7 +259,15 @@ class BrownianMotionMgf2D(BrownianMotion2D):
         self.is_target_set_vect = lambda x: np.linalg.norm(x - target_set_c, axis=1) >= target_set_r
 
     #TODO: generalize to arbitrary scaling factor sigma.
-    def psi_ana(self, x):
+    def psi_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical solution for the MGF value function.
+
+        Args:
+            x: Input points with shape (N, 2).
+
+        Returns:
+            Analytical MGF solution evaluated at x.
+        """
         c = self.target_set_c
         return np.where(
             self.is_target_set_vect(x),
@@ -235,14 +277,30 @@ class BrownianMotionMgf2D(BrownianMotion2D):
         )
 
     #TODO: generalize to arbitrary scaling factor sigma.
-    def u_opt_ana(self, x):
+    def u_opt_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical optimal control for the MGF setting.
+
+        Args:
+            x: Input points.
+
+        Returns:
+            Optimal control evaluated at x.
+        """
         return np.where(
             self.is_target_set(x),
             0,
             self.diffusion * np.tanh(x),
         )
 
-    def mfht_ana(self, x):
+    def mfht_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical mean first hitting time.
+
+        Args:
+            x: Input points.
+
+        Returns:
+            Mean first hitting time evaluated at x.
+        """
         c, r = self.target_set_c, self.target_set_r
         #a, b = c-r, c+r
         return np.where(
@@ -253,10 +311,15 @@ class BrownianMotionMgf2D(BrownianMotion2D):
         )
 
 class BrownianMotionCommittor2D(BrownianMotion2D):
-    '''
-    '''
+    """Committor setting for 2D Brownian motion."""
 
-    def __init__(self, epsilon=1e-10, radius_a=1., radius_b=3., **kwargs):
+    def __init__(
+        self,
+        epsilon: float = 1e-10,
+        radius_a: float = 1.0,
+        radius_b: float = 3.0,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -275,7 +338,15 @@ class BrownianMotionCommittor2D(BrownianMotion2D):
         # committor setting
         self.set_committor_setting(epsilon)
 
-    def psi_ana_r_simple(self, r):
+    def psi_ana_r_simple(self, r: float) -> float:
+        """Simple analytical committor in radial coordinates.
+
+        Args:
+            r: Radius value.
+
+        Returns:
+            Committor value at r.
+        """
         if r < r_a:
             return 0
         elif r < r_b:
@@ -283,7 +354,15 @@ class BrownianMotionCommittor2D(BrownianMotion2D):
         else:
             return 1
 
-    def psi_ana_r(self, r):
+    def psi_ana_r(self, r: Union[float, np.ndarray]) -> np.ndarray:
+        """Analytical committor in radial coordinates.
+
+        Args:
+            r: Radius value(s).
+
+        Returns:
+            Committor value(s) evaluated at r.
+        """
         r_a = self.radius_a
         r_b = self.radius_b
 
@@ -293,15 +372,22 @@ class BrownianMotionCommittor2D(BrownianMotion2D):
             np.where(r <= r_b, (np.log(r_a) - np.log(r)) / (np.log(r_a) - np.log(r_b)), 1),
         )
 
-    def psi_ana_x(self, x):
+    def psi_ana_x(self, x: np.ndarray) -> np.ndarray:
+        """Analytical committor evaluated at Cartesian points.
+
+        Args:
+            x: Input points with shape (N, 2).
+
+        Returns:
+            Committor value(s) evaluated at x.
+        """
         x_norm = np.linalg.norm(x, axis=1)
         return self.psi_ana_r(x_norm)
 
 class OverdampedLangevinSDE2D(ControlledSDE2D):
-    '''
-    '''
+    """Base class for 2D overdamped Langevin SDEs."""
 
-    def __init__(self, beta=1., **kwargs):
+    def __init__(self, beta: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # overdamped langevin flag
@@ -313,8 +399,28 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
         # diffusion
         self.diffusion = np.sqrt(2 / self.beta)
 
-    def plot_2d_potential(self, levels=10, isolines=True, target_set_patch=None, x_init=None,
-                          xlim=None, ylim=None):
+    def plot_2d_potential(
+        self,
+        levels: int = 10,
+        isolines: bool = True,
+        target_set_patch: Optional[Any] = None,
+        x_init: Optional[np.ndarray] = None,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the 2D potential over the discretized domain.
+
+        Args:
+            levels: Number of contour levels.
+            isolines: Whether to draw isolines on the contour plot.
+            target_set_patch: Optional matplotlib patch for target set.
+            x_init: Optional initial point to highlight.
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         ax.set_title(r'Potential $U_{pot}(x)$')
         ax.set_xlabel(r'$x_1$')
@@ -346,9 +452,14 @@ class OverdampedLangevinSDE2D(ControlledSDE2D):
         return fig, ax
 
 class DoubleWell2D(OverdampedLangevinSDE2D):
-    '''
-    '''
-    def __init__(self, alpha=np.array([1., 1.]), ts_pot_level=0.25, **kwargs):
+    """Overdamped Langevin dynamics with a 2D double well potential."""
+
+    def __init__(
+        self,
+        alpha: np.ndarray = np.array([1.0, 1.0]),
+        ts_pot_level: float = 0.25,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # check alpha
@@ -375,10 +486,14 @@ class DoubleWell2D(OverdampedLangevinSDE2D):
         self.ts_pot_level = ts_pot_level
 
 class DoubleWellMgf2D(DoubleWell2D):
-    '''
-    '''
+    """MGF setting for the 2D double well potential."""
 
-    def __init__(self, lam=1.0, target_set=None, **kwargs):
+    def __init__(
+        self,
+        lam: float = 1.0,
+        target_set: Optional[np.ndarray] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -407,10 +522,15 @@ class DoubleWellMgf2D(DoubleWell2D):
 
 
 class DoubleWellCommittor2D(DoubleWell2D):
-    '''
-    '''
+    """Committor setting for the 2D double well potential."""
 
-    def __init__(self, epsilon=1e-10, target_set_a=None, target_set_b=None, **kwargs):
+    def __init__(
+        self,
+        epsilon: float = 1e-10,
+        target_set_a: Optional[np.ndarray] = None,
+        target_set_b: Optional[np.ndarray] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -456,9 +576,14 @@ class DoubleWellCommittor2D(DoubleWell2D):
 
 
 class TripleWell2D(OverdampedLangevinSDE2D):
-    ''' Overdamped langevin dynamics following a triple well potential
-    '''
-    def __init__(self, alpha=np.array([1.]), ts_pot_level=-3.5, **kwargs):
+    """Overdamped Langevin dynamics with a 2D triple well potential."""
+
+    def __init__(
+        self,
+        alpha: np.ndarray = np.array([1.0]),
+        ts_pot_level: float = -3.5,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # check alpha
@@ -484,10 +609,9 @@ class TripleWell2D(OverdampedLangevinSDE2D):
         self.ts_pot_level = ts_pot_level
 
 class TripleWellMgf2D(TripleWell2D):
-    '''
-    '''
+    """MGF setting for the 2D triple well potential."""
 
-    def __init__(self, lam=1.0, **kwargs):
+    def __init__(self, lam: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -502,10 +626,9 @@ class TripleWellMgf2D(TripleWell2D):
 
 
 class TripleWellCommittor2D(TripleWell2D):
-    '''
-    '''
+    """Committor setting for the 2D triple well potential."""
 
-    def __init__(self, epsilon=1e-10, **kwargs):
+    def __init__(self, epsilon: float = 1e-10, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -522,9 +645,9 @@ class TripleWellCommittor2D(TripleWell2D):
         self.set_committor_setting(epsilon)
 
 class MuellerBrown2D(OverdampedLangevinSDE2D):
-    ''' Overdamped langevin dynamics following the Müller-Brown potential
-    '''
-    def __init__(self, ts_pot_level=-100, **kwargs):
+    """Overdamped Langevin dynamics with the Müller-Brown potential."""
+
+    def __init__(self, ts_pot_level: float = -100, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -553,10 +676,9 @@ class MuellerBrown2D(OverdampedLangevinSDE2D):
 
 
 class MuellerBrownMgf2D(MuellerBrown2D):
-    '''
-    '''
+    """MGF setting for the Müller-Brown potential."""
 
-    def __init__(self, lam=1.0, **kwargs):
+    def __init__(self, lam: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -570,10 +692,9 @@ class MuellerBrownMgf2D(MuellerBrown2D):
         self.set_mgf_setting(lam=lam)
 
 class MuellerBrownCommittor2D(MuellerBrown2D):
-    '''
-    '''
+    """Committor setting for the Müller-Brown potential."""
 
-    def __init__(self, epsilon=1e-10, **kwargs):
+    def __init__(self, epsilon: float = 1e-10, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name

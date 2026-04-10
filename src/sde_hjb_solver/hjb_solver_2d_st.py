@@ -1,5 +1,6 @@
 import os
 import time
+from typing import Any, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,106 +10,40 @@ import scipy.sparse.linalg as linalg
 from sde_hjb_solver.utils_path import save_data, load_data
 import sde_hjb_solver.figures
 
-class SolverHJB2D(object):
-    ''' This class provides a solver of the following 2d BVP by using a
-        finite differences method:
-            0 = LΨ − f Ψ in S
-            Ψ = exp(− g) in ∂S,
-        where f and g are the running and terminal costs of the work functional,
-        the solution Ψ is the quantity we want to estimate and L is the infinitessimal
-        generator of the not controlled 2d diffusion process:
-            L = b(x)·∇ + 1/2 sigma(x)^2·Δ
+class SolverHJB2D:
+    """Finite-difference solver for the 2D HJB boundary value problem.
 
-    Attributes
-    ----------
-    sde: ControlledSDE object
-        controlled sde object
-    ct_initial: float
-        initial computational time
-    ct_time: float
-        final computational time
-    ct: float
-        computational time
-    psi: array
-        solution of the BVP problem
-    solved: bool
-        flag telling us if the problem is solved
-    value_function: array
-        value function of the HJB equation
-    u_opt: array
-        optimal control of the HJB equation
-    mfht: array
-       mean first hitting time
+    Solves:
+        0 = LΨ − f Ψ in S
+        Ψ = exp(− g) in ∂S
 
+    where L is the infinitesimal generator of the uncontrolled 2D diffusion
+    process and f, g are running and terminal costs.
 
-    Methods
-    -------
-    __init__(sde, h, load)
+    Attributes:
+        sde: Controlled SDE instance defining drift/diffusion and costs.
+        h: Spatial grid step size.
+        ct_initial: Start time for solver timing.
+        ct_final: End time for solver timing.
+        ct: Total elapsed compute time.
+        psi: Solution of the boundary value problem.
+        solved: Whether the solver has produced a solution.
+        value_function: Value function (phi = -log(psi)).
+        u_opt: Optimal control computed from the value function.
+        mfht: Mean first hitting time estimate (if computed).
+    """
 
-    start_timer()
+    def __init__(self, sde: Any, h: float, load: bool = False) -> None:
+        """Initialize the 2D solver.
 
-    stop_timer()
+        Args:
+            sde: Controlled SDE instance (2D).
+            h: Grid step size.
+            load: Whether to load a previously saved solution.
 
-    get_flatten_index(idx)
-
-    get_bumpy_index(idx)
-
-    get_x(k)
-
-    get_flatten_idx_from_axis_neighbours(idx, i)
-
-    solve_bvp()
-
-    compute_value_function()
-
-    compute_optimal_control()
-
-    save()
-
-    load()
-
-    coarse_solution(h_coarse)
-
-    get_psi_at_x(x)
-
-    get_value_function_at_x(x)
-
-    get_u_opt_at_x(x)
-
-    get_perturbed_potential_and_drift()
-
-    write_report(x)
-
-    plot_2d_psi(levels, isolines=True, xlim=None, ylim=None)
-
-    plot_2d_value_function(levels, isolines=True, xlim=None, ylim=None)
-
-    plot_2d_perturbed_potential(levels, isolines=True, xlim=None, ylim=None)
-
-    plot_2d_control(scale=None, width=0.005, xlim=None, ylim=None)
-
-    plot_2d_perturbed_drift(levels, isolines=True, xlim=None, ylim=Noney)
-
-    plot_2d_mfht(levels, isolines=True, xlim=None, ylim=None)
-    '''
-
-    def __init__(self, sde, h, load=False):
-        ''' init method
-
-        Parameters
-        ----------
-        sde: langevinSDE object
-            overdamped langevin sde object
-        h: float
-            step size
-        load: bool
-            load solution
-
-        Raises
-        ------
-        NotImplementedError
-            If dimension d is greater than 1
-        '''
+        Raises:
+            NotImplementedError: If sde.d != 2.
+        """
 
         if sde.d != 2:
             raise NotImplementedError('d > 2 not supported')
@@ -125,31 +60,24 @@ class SolverHJB2D(object):
         if load:
             self.load()
 
-    def start_timer(self):
-        ''' start timer
-        '''
+    def start_timer(self) -> None:
+        """Start the computation timer."""
         self.ct_initial = time.perf_counter()
 
-    def stop_timer(self):
-        ''' stop timer
-        '''
+    def stop_timer(self) -> None:
+        """Stop the computation timer."""
         self.ct_final = time.perf_counter()
         self.ct = self.ct_final - self.ct_initial
 
-    def get_flatten_index(self, idx):
-        ''' maps the bumpy index of the node (index of each axis) to
-            the flatten index of the node, i.e. the node number.
+    def get_flatten_index(self, idx: tuple) -> int:
+        """Map a bumpy index to a flatten index.
 
-        Parameters
-        ----------
-        idx: tuple
-            bumpy index of the node
+        Args:
+            idx: Tuple of axis indices.
 
-        Returns
-        -------
-        int
-            flatten index of the node
-        '''
+        Returns:
+            Flatten index of the node.
+        """
         assert type(idx) == tuple, 'idx must be a tuple of axis indices'
         assert len(idx) == self.sde.d, f'idx must have length {self.sde.d}'
 
@@ -165,20 +93,15 @@ class SolverHJB2D(object):
 
         return k
 
-    def get_bumpy_index(self, k):
-        ''' maps the flatten index of the node (node number) to
-            the bumpy index of the node.
+    def get_bumpy_index(self, k: int) -> tuple:
+        """Map a flatten index to a bumpy (axis) index.
 
-        Parameters
-        ----------
-        k: int
-            flatten index of the node
+        Args:
+            k: Flatten index of the node.
 
-        Returns
-        -------
-        tuple
-            bumpy index of the node
-        '''
+        Returns:
+            Tuple of axis indices.
+        """
         #assert type(k) == int, ''
         assert 0 <= k <= self.sde.Nh - 1, (
             f'k must be in [0, {self.sde.Nh - 1}]'
@@ -193,40 +116,35 @@ class SolverHJB2D(object):
             k -= idx[i] * Nx_prod
         return tuple(idx)
 
-    def get_x(self, k):
-        ''' returns the x-coordinate of the node k
+    def get_x(self, k: int) -> np.ndarray:
+        """Return the coordinate of node k.
 
-        Parameters
-        ----------
-        k: int
-            flatten index of the node
+        Args:
+            k: Flatten index of the node.
 
-        Returns
-        -------
-        float
-            point in the domain
-        '''
+        Returns:
+            Point in the domain.
+        """
         assert k in np.arange(self.sde.Nh), (
             f'k must be a valid node index in [0, {self.sde.Nh - 1}]'
         )
 
         return self.sde.domain_h.reshape(self.sde.Nh, self.sde.d)[k]
 
-    def get_flatten_idx_from_axis_neighbours(self, idx, i):
-        ''' get flatten idx of the neighbours with respect to the i-th coordinate
+    def get_flatten_idx_from_axis_neighbours(
+        self,
+        idx: tuple,
+        i: int,
+    ) -> Tuple[Optional[int], Optional[int]]:
+        """Get flatten indices of neighbors along axis i.
 
-        Parameters
-        ----------
-        idx: tuple
-            bumpy index of the node
-        i: int
-            index of the ith coordinate
+        Args:
+            idx: Tuple of axis indices.
+            i: Axis index.
 
-        Returns
-        -------
-        tuple
-            (k_left, k_right)
-        '''
+        Returns:
+            Tuple of (k_left, k_right) neighbor indices.
+        """
 
         # find flatten index of left neighbour wrt the i axis
         if idx[i] == 0:
@@ -246,9 +164,8 @@ class SolverHJB2D(object):
 
         return (k_left, k_right)
 
-    def solve_bvp(self):
-        ''' solves bvp by using finite difference
-        '''
+    def solve_bvp(self) -> None:
+        """Solve the boundary value problem using finite differences."""
 
         # start timer
         self.start_timer()
@@ -336,16 +253,12 @@ class SolverHJB2D(object):
         # stop timer
         self.stop_timer()
 
-    def compute_value_function(self):
-        ''' computes the value function
-                phi = - log (psi)
-        '''
+    def compute_value_function(self) -> None:
+        """Compute the value function (phi = -log(psi))."""
         self.value_function =  - np.log(self.psi)
 
-    def compute_optimal_control(self):
-        ''' computes by finite differences the optimal control
-                u_opt = - sigma ∇ value_f
-        '''
+    def compute_optimal_control(self) -> None:
+        """Compute the optimal control using finite differences."""
         assert hasattr(self, 'value_function'), (
             'value_function must be computed before calling compute_optimal_control'
         )
@@ -389,9 +302,8 @@ class SolverHJB2D(object):
             self.u_opt[tuple(u_N_idx)] = self.u_opt[tuple(u_N_minus_idx)]
 
 
-    def save(self):
-        ''' saves some attributes as arrays into a .npz file
-        '''
+    def save(self) -> None:
+        """Save solver attributes to a .npz file."""
         # create data dictionary 
         data = {
             'h': self.sde.h,
@@ -409,9 +321,12 @@ class SolverHJB2D(object):
         # save arrays in a npz file
         save_data(data, self.rel_dir_path)
 
-    def load(self):
-        ''' loads the saved arrays and sets them as attributes back
-        '''
+    def load(self) -> bool:
+        """Load saved arrays and set solver attributes.
+
+        Returns:
+            True if loading succeeded; False otherwise.
+        """
         data = load_data(self.rel_dir_path)
         try:
             for attr_name in data.keys():
@@ -456,8 +371,8 @@ class SolverHJB2D(object):
         return True
 
 
-    def coarse_solution(self, h_coarse):
-        ''' coarse solution'''
+    def coarse_solution(self, h_coarse: float) -> None:
+        """Coarsen the solution by subsampling the grid."""
 
         assert self.h <= h_coarse, (
             f'h_coarse must be >= h (h={self.h}, h_coarse={h_coarse})'
@@ -476,67 +391,59 @@ class SolverHJB2D(object):
             self.dV = self.dV[::k, ::k]
             self.perturbed_drift = self.perturbed_drift[::k, ::k]
 
-    def get_psi_at_x(self, x):
-        ''' evaluates solution of the BVP at x
+    def get_psi_at_x(self, x: Union[float, np.ndarray]) -> Optional[Union[float, np.ndarray]]:
+        """Evaluate the solution psi at x.
 
-        Parameters
-        ----------
-        x: array
-            point in the domain
+        Args:
+            x: Point in the domain.
 
-        Returns
-        -------
-        float
-            psi at x
-        '''
+        Returns:
+            psi evaluated at x, or None if psi is unavailable.
+        """
         # get index of x
         idx = self.sde.get_idx(x)
 
         # evaluate psi at x
         return self.psi[idx] if hasattr(self, 'psi') else None
 
-    def get_value_function_at_x(self, x):
-        ''' evaluates the value function at x
+    def get_value_function_at_x(
+        self,
+        x: Union[float, np.ndarray],
+    ) -> Optional[Union[float, np.ndarray]]:
+        """Evaluate the value function at x.
 
-        Parameters
-        ----------
-        x: array
-            point in the domain
+        Args:
+            x: Point in the domain.
 
-        Returns
-        -------
-        float
-            value function at x
-        '''
+        Returns:
+            Value function evaluated at x, or None if unavailable.
+        """
         # get index of x
         idx = self.sde.get_idx(x)
 
         # evaluate value function at x
         return self.value_function[idx] if hasattr(self, 'value_function') else None
 
-    def get_u_opt_at_x(self, x):
-        ''' evaluates the optimal control at x
+    def get_u_opt_at_x(
+        self,
+        x: Union[float, np.ndarray],
+    ) -> Optional[Union[float, np.ndarray]]:
+        """Evaluate the optimal control at x.
 
-        Parameters
-        ----------
-        x: array
-            point in the domain
+        Args:
+            x: Point in the domain.
 
-        Returns
-        -------
-        array
-            optimal control at x
-        '''
+        Returns:
+            Optimal control evaluated at x, or None if unavailable.
+        """
         # get index of x
         idx = self.sde.get_idx(x)
 
         # evaluate optimal control at x
         return self.u_opt[idx] if hasattr(self, 'u_opt') else None
 
-    def get_perturbed_potential_and_drift(self):
-        ''' computes the potential, bias potential, controlled potential, gradient,
-            controlled drift
-        '''
+    def get_perturbed_potential_and_drift(self) -> None:
+        """Compute potentials, gradients, and perturbed drift fields."""
 
         # flatten domain_h
         x = self.sde.domain_h.reshape(self.sde.Nh, self.sde.d)
@@ -554,14 +461,12 @@ class SolverHJB2D(object):
         self.perturbed_drift = - self.dV + sigma * self.u_opt
 
 
-    def write_report(self, x):
-        ''' writes the hjb solver parameters and the value of the solution at x
+    def write_report(self, x: Union[float, np.ndarray]) -> None:
+        """Print solver parameters and solution values at x.
 
-        Parameters
-        ----------
-        x: array
-            point in the domain
-        '''
+        Args:
+            x: Point in the domain.
+        """
         from sde_hjb_solver.utils import get_time_in_hms
 
         # space discretization
@@ -600,7 +505,24 @@ class SolverHJB2D(object):
         h, m, s = get_time_in_hms(self.ct)
         print('\nComputational time: {:d}:{:02d}:{:02.2f}\n'.format(h, m, s))
 
-    def plot_2d_psi(self, levels=10, isolines=True, xlim=None, ylim=None):
+    def plot_2d_psi(
+        self,
+        levels: int = 10,
+        isolines: bool = True,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the estimated solution psi(x).
+
+        Args:
+            levels: Number of contour levels.
+            isolines: Whether to draw isolines.
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\Psi(x)$')
         ax.set_xlabel(r'$x_1$')
@@ -624,7 +546,24 @@ class SolverHJB2D(object):
 
         return fig, ax
 
-    def plot_2d_value_function(self, levels=10, isolines=True, xlim=None, ylim=None):
+    def plot_2d_value_function(
+        self,
+        levels: int = 10,
+        isolines: bool = True,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the estimated value function phi(x).
+
+        Args:
+            levels: Number of contour levels.
+            isolines: Whether to draw isolines.
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\Phi(x)$')
         ax.set_xlabel(r'$x_1$')
@@ -648,7 +587,24 @@ class SolverHJB2D(object):
 
         return fig, ax
 
-    def plot_2d_perturbed_potential(self, levels=10, isolines=True, xlim=None, ylim=None):
+    def plot_2d_perturbed_potential(
+        self,
+        levels: int = 10,
+        isolines: bool = True,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the perturbed potential.
+
+        Args:
+            levels: Number of contour levels.
+            isolines: Whether to draw isolines.
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         ax.set_title(r'Perturbed potential $(U_{pot} + U_{bias})(x)$')
         ax.set_xlabel(r'$x_1$')
@@ -672,7 +628,24 @@ class SolverHJB2D(object):
 
         return fig, ax
 
-    def plot_2d_control(self, scale=None, width=0.005, xlim=None, ylim=None):
+    def plot_2d_control(
+        self,
+        scale: Optional[float] = None,
+        width: float = 0.005,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the optimal control field.
+
+        Args:
+            scale: Optional quiver scale.
+            width: Quiver arrow width.
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         from matplotlib import colors, cm
 
         fig, ax = plt.subplots()
@@ -725,7 +698,24 @@ class SolverHJB2D(object):
         return fig, ax
     """
 
-    def plot_2d_mfht(self, levels=10, isolines=True, xlim=None, ylim=None):
+    def plot_2d_mfht(
+        self,
+        levels: int = 10,
+        isolines: bool = True,
+        xlim: Optional[Tuple[float, float]] = None,
+        ylim: Optional[Tuple[float, float]] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the mean first hitting time estimate.
+
+        Args:
+            levels: Number of contour levels.
+            isolines: Whether to draw isolines.
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         ax.set_title(r'Estimation of $\mathbb{E}^x[\tau]$')
         ax.set_xlabel(r'$x_1$')

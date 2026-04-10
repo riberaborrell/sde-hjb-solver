@@ -1,3 +1,5 @@
+"""Matplotlib style defaults used by the solver plots."""
+
 import matplotlib as mpl
 
 mpl.rcParams['axes.labelsize'] = 14
@@ -7,4 +9,4 @@ mpl.rcParams['legend.fontsize'] = 14
 mpl.rcParams['lines.linewidth'] = 4
 mpl.rcParams['xtick.labelsize'] = 14
 mpl.rcParams['ytick.labelsize'] = 14
-mpl.rcParams["contour.linewidth"] = 1.5
+mpl.rcParams['contour.linewidth'] = 1.5

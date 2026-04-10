@@ -1,4 +1,5 @@
 import functools
+from typing import Any, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,19 +15,21 @@ from sde_hjb_solver.functions import (
 from sde_hjb_solver.controlled_sde import ControlledSDE
 
 class ControlledSDE1D(ControlledSDE):
-    '''
-    '''
+    """Base class for 1D controlled SDEs."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
 
         # dimension
         kwargs.update(d=1)
 
         super().__init__(**kwargs)
 
-    def discretize_domain_1d(self, h):
-        '''
-        '''
+    def discretize_domain_1d(self, h: float) -> None:
+        """Discretize the 1D domain into a uniform grid.
+
+        Args:
+            h: Grid step size.
+        """
 
         # discretization step
         self.h = h
@@ -47,9 +50,15 @@ class ControlledSDE1D(ControlledSDE):
         # get node indices corresponding to the target set
         self.get_target_set_idx()
 
-    def get_index_vectorized(self, x):
-        '''
-        '''
+    def get_index_vectorized(self, x: np.ndarray) -> Tuple[np.ndarray, ...]:
+        """Return grid indices for a batch of points.
+
+        Args:
+            x: Array of shape (N, d) containing input points.
+
+        Returns:
+            Tuple of index arrays for each axis.
+        """
         assert x.ndim == 2, 'x must be a 2D array of shape (N, d)'
         assert x.shape[1] == self.d, f'Expected x.shape[1] == {self.d}, got {x.shape[1]}'
 
@@ -65,34 +74,38 @@ class ControlledSDE1D(ControlledSDE):
         return idx
 
 
-    def set_is_target_set_mgf(self):
-        '''set is in target set condition function'''
+    def set_is_target_set_mgf(self) -> None:
+        """Set the target-set indicator function for the MGF setting."""
         self.is_target_set = lambda x: (x >= self.target_set[0]) & \
                                           (x <= self.target_set[1])
 
 
-    def set_is_target_set_committor(self):
-        '''set is in target set condition functions'''
+    def set_is_target_set_committor(self) -> None:
+        """Set the target-set indicator functions for the committor setting."""
         self.is_target_set_a = lambda x: (x >= self.target_set_a[0]) & (x <= self.target_set_a[1])
         self.is_target_set_b = lambda x: (x >= self.target_set_b[0]) & (x <= self.target_set_b[1])
 
-    def get_target_set_idx_mgf(self):
-        '''get indices of the discretized domain corresponding to the target set
-        '''
+    def get_target_set_idx_mgf(self) -> None:
+        """Compute indices of the discretized domain in the MGF target set."""
         x = self.domain_h
         self.ts_idx = np.where(self.is_target_set(x))[0]
 
-    def get_target_set_idx_committor(self):
-        '''get indices of the discretized domain corresponding to the target sets A and B
-        '''
+    def get_target_set_idx_committor(self) -> None:
+        """Compute indices of the discretized domain in the committor target sets."""
         x = self.domain_h
         self.ts_a_idx = np.where(self.is_target_set_a(x))[0]
         self.ts_b_idx = np.where(self.is_target_set_b(x))[0]
         self.ts_idx = np.where(self.is_target_set_a(x) | self.is_target_set_b(x))[0]
 
-    def get_idx(self, x):
-        ''' get index of the grid point which approximates x
-        '''
+    def get_idx(self, x: Union[float, np.ndarray]) -> Union[int, np.ndarray, tuple]:
+        """Get index of the grid point that approximates x.
+
+        Args:
+            x: Scalar or 1D array input.
+
+        Returns:
+            Grid index/indices for x.
+        """
         # array convertion
         x = np.asarray(x)
 
@@ -116,18 +129,25 @@ class ControlledSDE1D(ControlledSDE):
         else:
             return tuple(idx)
 
-    def get_idx_truncate(self, x):
+    def get_idx_truncate(self, x: np.ndarray) -> np.ndarray:
+        """Return grid indices by truncation within domain bounds."""
         x = np.clip(x, self.domain[0], self.domain[1])
         idx = np.floor((x - self.domain[0]) / self.h).astype(int)
         return idx
 
-    def get_idx_min(self, x):
+    def get_idx_min(self, x: np.ndarray) -> np.ndarray:
+        """Return nearest grid indices for x."""
         return np.argmin(np.abs(self.domain_h - x), axis=1)
 
-    def compute_mfht(self, delta=0.001):
-        ''' estimates the expected first hitting time by finite differences of the quantity
-            of interest psi(x)
-        '''
+    def compute_mfht(self, delta: float = 0.001) -> np.ndarray:
+        """Estimate the mean first hitting time by finite differences.
+
+        Args:
+            delta: Small perturbation for the MGF parameter.
+
+        Returns:
+            Estimated mean first hitting time
+        """
         from sde_hjb_solver.hjb_solver_1d_st import SolverHJB1D
         from copy import copy
 
@@ -144,10 +164,9 @@ class ControlledSDE1D(ControlledSDE):
         return - (sol_plus.psi - sol_minus.psi) / (2 * delta)
 
 class BrownianMotion1D(ControlledSDE1D):
-    '''
-    '''
+    """1D Brownian motion with constant diffusion."""
 
-    def __init__(self, beta: float = 1, **kwargs):
+    def __init__(self, beta: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -169,10 +188,15 @@ class BrownianMotion1D(ControlledSDE1D):
         self.params_str = 'sigma{:.1f}'.format(self.diffusion)
 
 class BrownianMotionMgf1D(BrownianMotion1D):
-    '''
-    '''
+    """MGF setting for 1D Brownian motion."""
 
-    def __init__(self, lam=1.0, target_set_r=1., target_set_c=0., **kwargs):
+    def __init__(
+        self,
+        lam: float = 1.0,
+        target_set_r: float = 1.0,
+        target_set_c: float = 0.0,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -188,7 +212,15 @@ class BrownianMotionMgf1D(BrownianMotion1D):
         # set in target set condition function
         self.is_target_set = lambda x: np.abs(x-self.target_set_c) >= self.target_set_r
 
-    def psi_ana(self, x):
+    def psi_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical solution for the MGF value function.
+
+        Args:
+            x: Input points.
+
+        Returns:
+            Analytical MGF solution evaluated at x.
+        """
         c = self.target_set_c
         return np.where(
             self.is_target_set(x),
@@ -196,7 +228,15 @@ class BrownianMotionMgf1D(BrownianMotion1D):
             np.cosh(np.sqrt(self.beta) * (x-c)) / np.cosh(np.sqrt(self.beta)),
         )
 
-    def u_opt_ana(self, x):
+    def u_opt_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical optimal control for the MGF setting.
+
+        Args:
+            x: Input points.
+
+        Returns:
+            Optimal control evaluated at x.
+        """
         c = self.target_set_c
         return np.where(
             self.is_target_set(x),
@@ -204,7 +244,15 @@ class BrownianMotionMgf1D(BrownianMotion1D):
             np.sqrt(2) * np.tanh(np.sqrt(self.beta) * (x-c)),
         )
 
-    def mfht_ana(self, x):
+    def mfht_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical mean first hitting time.
+
+        Args:
+            x: Input points.
+
+        Returns:
+            Mean first hitting time evaluated at x.
+        """
         c, r = self.target_set_c, self.target_set_r
         return np.where(
             self.is_target_set(x),
@@ -213,10 +261,15 @@ class BrownianMotionMgf1D(BrownianMotion1D):
         )
 
 class BrownianMotionCommittor1D(BrownianMotion1D):
-    '''
-    '''
+    """Committor setting for 1D Brownian motion."""
 
-    def __init__(self, epsilon=1e-10, target_set_a=(-2, -1), target_set_b=(1, 2), **kwargs):
+    def __init__(
+        self,
+        epsilon: float = 1e-10,
+        target_set_a: Tuple[float, float] = (-2.0, -1.0),
+        target_set_b: Tuple[float, float] = (1.0, 2.0),
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -232,7 +285,15 @@ class BrownianMotionCommittor1D(BrownianMotion1D):
         # set in target set condition function
         self.set_is_target_set_committor()
 
-    def psi_ana(self, x):
+    def psi_ana(self, x: np.ndarray) -> np.ndarray:
+        """Analytical committor solution.
+
+        Args:
+            x: Input points.
+
+        Returns:
+            Committor value evaluated at x.
+        """
         a = self.target_set_a[1]
         b = self.target_set_b[0]
 
@@ -244,10 +305,9 @@ class BrownianMotionCommittor1D(BrownianMotion1D):
         )
 
 class OverdampedLangevinSDE1D(ControlledSDE1D):
-    '''
-    '''
+    """Base class for 1D overdamped Langevin SDEs."""
 
-    def __init__(self, beta: float = 1., **kwargs):
+    def __init__(self, beta: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # overdamped langevin flag
@@ -259,7 +319,20 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
         # diffusion
         self.diffusion = np.sqrt(2 / self.beta)
 
-    def plot_1d_potential(self, xlim=None, ylim=None):
+    def plot_1d_potential(
+        self,
+        xlim: Union[Tuple[float, float], None] = None,
+        ylim: Union[Tuple[float, float], None] = None,
+    ) -> Tuple[plt.Figure, plt.Axes]:
+        """Plot the 1D potential over the discretized domain.
+
+        Args:
+            xlim: Optional x-axis limits.
+            ylim: Optional y-axis limits.
+
+        Returns:
+            Matplotlib figure and axes.
+        """
         fig, ax = plt.subplots()
         ax.set_title(r'Potential $U_{pot}(x)$')
         ax.set_xlabel('x')
@@ -274,9 +347,9 @@ class OverdampedLangevinSDE1D(ControlledSDE1D):
 
 
 class DoubleWell1D(OverdampedLangevinSDE1D):
-    ''' Overdamped langevin dynamics with double well potential.
-    '''
-    def __init__(self, alpha=np.array([1.]), **kwargs):
+    """Overdamped Langevin dynamics with a double well potential."""
+
+    def __init__(self, alpha: np.ndarray = np.array([1.0]), **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # check alpha
@@ -299,8 +372,14 @@ class DoubleWell1D(OverdampedLangevinSDE1D):
             self.domain = (-2, 2)
 
 class DoubleWellMgf1D(DoubleWell1D):
+    """MGF setting for the 1D double well potential."""
 
-    def __init__(self, lam=1.0, target_set=(1, 2), **kwargs):
+    def __init__(
+        self,
+        lam: float = 1.0,
+        target_set: Tuple[float, float] = (1.0, 2.0),
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -317,8 +396,15 @@ class DoubleWellMgf1D(DoubleWell1D):
 
 
 class DoubleWellCommittor1D(DoubleWell1D):
+    """Committor setting for the 1D double well potential."""
 
-    def __init__(self, epsilon=1e-10, target_set_a=(-2, -1), target_set_b=(1, 2), **kwargs):
+    def __init__(
+        self,
+        epsilon: float = 1e-10,
+        target_set_a: Tuple[float, float] = (-2.0, -1.0),
+        target_set_b: Tuple[float, float] = (1.0, 2.0),
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -337,10 +423,9 @@ class DoubleWellCommittor1D(DoubleWell1D):
 
 
 class SkewDoubleWell1D(OverdampedLangevinSDE1D):
-    ''' Overdamped langevin dynamics with skew double well potential.
-    '''
+    """Overdamped Langevin dynamics with a skew double well potential."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -359,10 +444,14 @@ class SkewDoubleWell1D(OverdampedLangevinSDE1D):
             self.domain = (-2, 2)
 
 class SkewDoubleWellMgf1D(SkewDoubleWell1D):
-    ''' Moment generating function setting. We aim to compute the MFHT (see Hartmann2012).
-    '''
+    """MGF setting for the skew double well potential."""
 
-    def __init__(self, lam=1.0, target_set=(-1.1, -1), **kwargs):
+    def __init__(
+        self,
+        lam: float = 1.0,
+        target_set: Tuple[float, float] = (-1.1, -1.0),
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -378,10 +467,9 @@ class SkewDoubleWellMgf1D(SkewDoubleWell1D):
         self.set_is_target_set_mgf()
 
 class TripleWell1D(OverdampedLangevinSDE1D):
-    ''' Overdamped langevin dynamics with asymmetric triple well potential.
-    '''
+    """Overdamped Langevin dynamics with an asymmetric triple well potential."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -405,10 +493,9 @@ class TripleWell1D(OverdampedLangevinSDE1D):
         self.m3 = 3.77699 # highest minimum
 
 class TripleWellMgf1D(TripleWell1D):
-    '''
-    '''
+    """MGF setting for the 1D triple well potential."""
 
-    def __init__(self, lam=1.0, **kwargs):
+    def __init__(self, lam: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -424,10 +511,9 @@ class TripleWellMgf1D(TripleWell1D):
         self.set_is_target_set_mgf()
 
 class TripleWellCommittor1D(TripleWell1D):
-    '''
-    '''
+    """Committor setting for the 1D triple well potential."""
 
-    def __init__(self, epsilon=1e-10, **kwargs):
+    def __init__(self, epsilon: float = 1e-10, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -443,10 +529,9 @@ class TripleWellCommittor1D(TripleWell1D):
         self.set_is_target_set_committor()
 
 class RyckBell1D(OverdampedLangevinSDE1D):
-    ''' Overdamped langevin dynamics with ryck bell potential.
-    '''
+    """Overdamped Langevin dynamics with Ryck-Bell potential."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -474,10 +559,14 @@ class RyckBell1D(OverdampedLangevinSDE1D):
         self.m_gauche2 = 5 * np.pi / 3 # local minimum
 
 class RyckBellMgf1D(RyckBell1D):
-    '''
-    '''
+    """MGF setting for the Ryck-Bell potential."""
 
-    def __init__(self, lam=1.0, epsilon=20, **kwargs):
+    def __init__(
+        self,
+        lam: float = 1.0,
+        epsilon: float = 20,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -495,10 +584,9 @@ class RyckBellMgf1D(RyckBell1D):
 
 
 class FiveWell1D(OverdampedLangevinSDE1D):
-    ''' Overdamped langevin dynamics with five well potential.
-    '''
+    """Overdamped Langevin dynamics with a five well potential."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -524,10 +612,9 @@ class FiveWell1D(OverdampedLangevinSDE1D):
         self.m3 = 3.77699 # highest minimum
 
 class FiveWellMgf1D(FiveWell1D):
-    '''
-    '''
+    """MGF setting for the 1D five well potential."""
 
-    def __init__(self, lam=1.0, **kwargs):
+    def __init__(self, lam: float = 1.0, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
         # log name
@@ -543,10 +630,14 @@ class FiveWellMgf1D(FiveWell1D):
         self.set_is_target_set_mgf()
 
 class FiveWellCommittor1D(FiveWell1D):
-    '''
-    '''
+    """Committor setting for the 1D five well potential."""
 
-    def __init__(self, epsilon=1e-10, ts_a='m2', **kwargs):
+    def __init__(
+        self,
+        epsilon: float = 1e-10,
+        ts_a: str = 'm2',
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
 
         # log name

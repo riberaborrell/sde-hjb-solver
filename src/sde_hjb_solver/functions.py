@@ -1,10 +1,21 @@
 import functools
+from typing import Union
 
 import numpy as np
 
-def constant(x, a):
-    ''' constant scalar function
-    '''
+ArrayLike = Union[float, np.ndarray]
+
+
+def constant(x: ArrayLike, a: float) -> ArrayLike:
+    """Constant scalar function.
+
+    Args:
+        x: Input value(s).
+        a: Constant value.
+
+    Returns:
+        Constant value with shape matching the input.
+    """
 
     # convertion
     x = np.asarray(x)
@@ -23,9 +34,16 @@ def constant(x, a):
         K = x.shape[0]
         return a * np.ones(K)
 
-def linear(x, a):
-    ''' linear scalar function
-    '''
+def linear(x: ArrayLike, a: ArrayLike) -> ArrayLike:
+    """Linear scalar function.
+
+    Args:
+        x: Input value(s).
+        a: Linear coefficient(s).
+
+    Returns:
+        Linear function value(s) for the input.
+    """
 
     # convertion
     x = np.asarray(x)
@@ -44,10 +62,18 @@ def linear(x, a):
         return (a * x).squeeze()
 
 
-def quadratic_one_well(x, nu):
-    ''' Multi-dimensional quadratic one well. V(x): \R^d -> \R.
-        For d=1 V(x; nu) = nu * (x -1)**2 and has a minimum at x=1.
-    '''
+def quadratic_one_well(x: ArrayLike, nu: ArrayLike) -> ArrayLike:
+    """Multi-dimensional quadratic one-well potential.
+
+    For d=1, V(x; nu) = nu * (x - 1)**2 and has a minimum at x=1.
+
+    Args:
+        x: Input value(s) with shape (d,) or (N, d).
+        nu: Quadratic coefficients (scalar or length-d array).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
 
     # convertion
     x = np.asarray(x)
@@ -72,10 +98,18 @@ def quadratic_one_well(x, nu):
         assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         return np.sum(nu * (x -1)**2, axis=1)
 
-def double_well(x, alpha):
-    ''' Multi-dimensional double well. V(x): \R^d -> \R.
-        For d=1 V has minimums at x=+- 1 and maximum at x=alpha.
-    '''
+def double_well(x: ArrayLike, alpha: ArrayLike) -> ArrayLike:
+    """Multi-dimensional double well potential.
+
+    For d=1, V has minima at x=±1 and a maximum at x=alpha.
+
+    Args:
+        x: Input value(s) with shape (d,) or (N, d).
+        alpha: Potential scale parameter(s).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
 
     # convertion
     x = np.asarray(x)
@@ -100,9 +134,16 @@ def double_well(x, alpha):
         assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         return np.sum(alpha * (x ** 2 -1) **2, axis=1)
 
-def double_well_gradient(x, alpha):
-    ''' Gradient of the multi-dimensional double well. ∇V(x): \R^d -> \R^d.
-    '''
+def double_well_gradient(x: ArrayLike, alpha: ArrayLike) -> ArrayLike:
+    """Gradient of the multi-dimensional double well.
+
+    Args:
+        x: Input value(s) with shape (d,) or (N, d).
+        alpha: Potential scale parameter(s).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
 
     # convertion
     x = np.asarray(x)
@@ -128,9 +169,15 @@ def double_well_gradient(x, alpha):
         K = x.shape[0]
         return 4 * alpha * x * (x ** 2 - 1)
 
-def skew_double_well_1d(x):
-    ''' Skew 1-dimensional double well.
-    '''
+def skew_double_well_1d(x: ArrayLike) -> ArrayLike:
+    """Skew 1-dimensional double well potential.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     d = 1
     x = np.asarray(x)
 
@@ -144,9 +191,15 @@ def skew_double_well_1d(x):
 
     return (x**2 -1)**2 - 0.2*x + 0.3
 
-def skew_double_well_gradient_1d(x):
-    ''' Gradient of the skew 1-dimensional double well.
-    '''
+def skew_double_well_gradient_1d(x: ArrayLike) -> ArrayLike:
+    """Gradient of the skew 1-dimensional double well.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     x = np.asarray(x)
 
     # array input
@@ -159,9 +212,15 @@ def skew_double_well_gradient_1d(x):
 
     return 4 * x * (x**2 - 1) - 0.2
 
-def triple_well_1d(x):
-    ''' Asymmetric 1-dimensional triple well
-    '''
+def triple_well_1d(x: ArrayLike) -> ArrayLike:
+    """Asymmetric 1-dimensional triple well potential.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     d = 1
     x = np.asarray(x)
 
@@ -175,9 +234,15 @@ def triple_well_1d(x):
 
     return (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200
 
-def triple_well_gradient_1d(x):
-    ''' Gradient of the asymmetric 1-dimensional triple well.
-    '''
+def triple_well_gradient_1d(x: ArrayLike) -> ArrayLike:
+    """Gradient of the asymmetric 1-dimensional triple well.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     x = np.asarray(x)
 
     # array input
@@ -190,15 +255,37 @@ def triple_well_gradient_1d(x):
 
     return + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
 
-def ryck_bell_1d(x):
+def ryck_bell_1d(x: ArrayLike) -> ArrayLike:
+    """Ryck-Bell 1D potential.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     return np.polyval(np.array([-3.778, 3.156, -0.368, -1.578, 1.462, 1.116]), np.cos(x))
 
-def ryck_bell_gradient_1d(x):
+def ryck_bell_gradient_1d(x: ArrayLike) -> ArrayLike:
+    """Gradient of the Ryck-Bell 1D potential.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     return np.polyval(np.array([18.94, -12.624, 1.104, 3.156, -1.462]), np.cos(x)) * np.sin(x)
 
-def five_well_1d(x):
-    ''' 1-dimensional five well potential.
-    '''
+def five_well_1d(x: ArrayLike) -> ArrayLike:
+    """1-dimensional five well potential.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     d = 1
     x = np.asarray(x)
 
@@ -214,9 +301,15 @@ def five_well_1d(x):
            - 0.6 * np.exp(-12.5 * (x + 2)**2 ) \
            - 0.7 * np.exp(-12.5 * (x - 1.8)**2)
 
-def five_well_gradient_1d(x):
-    ''' Gradient of the 1-dimensional five well potential.
-    '''
+def five_well_gradient_1d(x: ArrayLike) -> ArrayLike:
+    """Gradient of the 1-dimensional five well potential.
+
+    Args:
+        x: Input value(s).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     x = np.asarray(x)
 
     # array input
@@ -231,9 +324,15 @@ def five_well_gradient_1d(x):
            - 15 * (x + 2) * np.exp(-12.5 *(x + 2)**2) \
            - 17.5 * (x - 1.8) * np.exp(-12.5*(x - 1.8)**2)
 
-def double_well_curved_2d(x):
-    '''
-    '''
+def double_well_curved_2d(x: np.ndarray) -> np.ndarray:
+    """Curved 2D double well potential.
+
+    Args:
+        x: Input array with shape (2,) or (N, 2).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     d = 2
 
     # scalar input
@@ -258,9 +357,15 @@ def double_well_curved_2d(x):
 
     return potential
 
-def double_well_curved_gradient_2d(x):
-    '''
-    '''
+def double_well_curved_gradient_2d(x: np.ndarray) -> np.ndarray:
+    """Gradient of the curved 2D double well potential.
+
+    Args:
+        x: Input array with shape (2,) or (N, 2).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     d = 2
 
     # scalar input
@@ -287,9 +392,16 @@ def double_well_curved_gradient_2d(x):
 
     return gradient
 
-def triple_well_2d(x, alpha):
-    '''
-    '''
+def triple_well_2d(x: np.ndarray, alpha: ArrayLike) -> np.ndarray:
+    """2D triple well potential.
+
+    Args:
+        x: Input array with shape (2,) or (N, 2).
+        alpha: Potential scale parameter.
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     d = 2
 
     # scalar input
@@ -321,9 +433,16 @@ def triple_well_2d(x, alpha):
 
     return potential
 
-def triple_well_gradient_2d(x, alpha):
-    '''
-    '''
+def triple_well_gradient_2d(x: np.ndarray, alpha: ArrayLike) -> np.ndarray:
+    """Gradient of the 2D triple well potential.
+
+    Args:
+        x: Input array with shape (2,) or (N, 2).
+        alpha: Potential scale parameter.
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     d = 2
 
     # scalar input
@@ -364,9 +483,15 @@ def triple_well_gradient_2d(x, alpha):
 
     return gradient
 
-def mueller_brown_2d(x):
-    '''
-    '''
+def mueller_brown_2d(x: np.ndarray) -> np.ndarray:
+    """Müller-Brown 2D potential.
+
+    Args:
+        x: Input array with shape (2,) or (N, 2).
+
+    Returns:
+        Potential value(s) evaluated at x.
+    """
     d = 2
 
     # scalar input
@@ -404,9 +529,15 @@ def mueller_brown_2d(x):
 
     return potential
 
-def mueller_brown_gradient_2d(x):
-    '''
-    '''
+def mueller_brown_gradient_2d(x: np.ndarray) -> np.ndarray:
+    """Gradient of the Müller-Brown 2D potential.
+
+    Args:
+        x: Input array with shape (2,) or (N, 2).
+
+    Returns:
+        Gradient value(s) evaluated at x.
+    """
     d = 2
 
     A = [-200, -100, -170, 15]

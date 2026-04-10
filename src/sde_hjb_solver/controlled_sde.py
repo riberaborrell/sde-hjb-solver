@@ -1,12 +1,40 @@
 import functools
+from typing import Any, Optional, Union
+
+import numpy as np
 
 from sde_hjb_solver.functions import constant, quadratic_one_well
 
-class ControlledSDE(object):
-    '''
-    '''
+class ControlledSDE:
+    """Base class for controlled stochastic differential equations.
 
-    def __init__(self, d, domain=None, **kwargs):
+    This class defines common configuration for different settings
+    (e.g., MGF, committor, finite time horizon). Concrete SDEs are implemented
+    in dimension-specific subclasses and should provide target-set logic and
+    model-specific parameters.
+
+    Attributes:
+        d: Dimension of the state space.
+        domain: Domain bounds. For 1D, typically (lb, ub). For 2D, typically
+            an array of shape (d, 2) with lower/upper bounds per axis.
+        setting: Active problem setting identifier (e.g., "mgf", "committor").
+        f: Running cost function.
+        g: Terminal cost function.
+    """
+
+    def __init__(
+        self,
+        d: int,
+        domain: Optional[Union[tuple, np.ndarray]] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize a controlled SDE container.
+
+        Args:
+            d: Dimension of the state space.
+            domain: Domain bounds for the state space.
+            **kwargs: Additional parameters passed by subclasses (unused here).
+        """
 
         # dimension
         self.d = d
@@ -14,9 +42,12 @@ class ControlledSDE(object):
         # domain bounds
         self.domain = domain
 
-    def set_mgf_setting(self, lam=1.):
-        ''' Set moment generating function of the first hitting time setting
-        '''
+    def set_mgf_setting(self, lam: float = 1.0) -> None:
+        """Set the moment generating function (MGF) of the first hitting time setting.
+
+        Args:
+            lam: MGF parameter.
+        """
         # set mgf problem flag
         self.setting = 'mgf'
 
@@ -28,9 +59,12 @@ class ControlledSDE(object):
         # target set indices
         self.get_target_set_idx = self.get_target_set_idx_mgf
 
-    def set_committor_setting(self, epsilon=1e-10):
-        ''' Set committor probability setting
-        '''
+    def set_committor_setting(self, epsilon: float = 1e-10) -> None:
+        """Set the committor probability setting.
+
+        Args:
+            epsilon: Small positive constant used to regularize log terms.
+        """
         # set committor problem flag
         self.setting = 'committor'
 
@@ -46,9 +80,12 @@ class ControlledSDE(object):
         # target set indices
         self.get_target_set_idx = self.get_target_set_idx_committor
 
-    def set_finite_time_horizon_setting(self, nu=1.0):
-        ''' Set finite time horizon setting
-        '''
+    def set_finite_time_horizon_setting(self, nu: float = 1.0) -> None:
+        """Set the finite time horizon setting.
+
+        Args:
+            nu: parameter scaling the quadratic one well potential.
+        """
         # set committor problem flag
         self.setting = 'finite_time_horizon'
 
@@ -57,9 +94,13 @@ class ControlledSDE(object):
         self.f = lambda x: 0
         self.g = functools.partial(quadratic_one_well, nu=nu)
 
-    def set_fht_probs_setting(self, T=1.0, epsilon=1e-10):
-        ''' Set first hitting time probabilities setting
-        '''
+    def set_fht_probs_setting(self, T: float = 1.0, epsilon: float = 1e-10) -> None:
+        """Set the first hitting time probabilities setting.
+
+        Args:
+            T: Time horizon used by the FHT probabilities formulation.
+            epsilon: Small positive constant used to regularize log terms.
+        """
         # set committor problem flag
         self.setting = 'fht_probabilities'
 
@@ -77,5 +118,6 @@ class ControlledSDE(object):
 
 
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return a short identifier for output paths and logging."""
         return f'{self.name}__{self.params_str}'
