@@ -59,17 +59,17 @@ def quadratic_one_well(x, nu):
     if x.ndim == 0:
         return nu[0] * (x - 1) ** 2
 
-    assert nu.ndim == 1, ''
+    assert nu.ndim == 1, f'nu must be a 1D array; got ndim={nu.ndim}'
     d = nu.shape[0]
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         return np.sum(nu * (x -1)**2)
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         return np.sum(nu * (x -1)**2, axis=1)
 
 def double_well(x, alpha):
@@ -87,17 +87,17 @@ def double_well(x, alpha):
     if x.ndim == 0:
         return alpha[0] * (x**2 - 1) ** 2
 
-    assert alpha.ndim == 1, ''
+    assert alpha.ndim == 1, f'alpha must be a 1D array; got ndim={alpha.ndim}'
     d = alpha.shape[0]
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         return np.sum(alpha * (x**2 - 1) ** 2)
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         return np.sum(alpha * (x ** 2 -1) **2, axis=1)
 
 def double_well_gradient(x, alpha):
@@ -114,17 +114,17 @@ def double_well_gradient(x, alpha):
     if x.ndim == 0:
         return 4 * alpha[0] * x * (x**2 - 1)
 
-    assert alpha.ndim == 1, ''
+    assert alpha.ndim == 1, f'alpha must be a 1D array; got ndim={alpha.ndim}'
     d = alpha.shape[0]
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         return 4 * alpha * x * (x**2 - 1)
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         K = x.shape[0]
         return 4 * alpha * x * (x ** 2 - 1)
 
@@ -136,11 +136,11 @@ def skew_double_well_1d(x):
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
 
     return (x**2 -1)**2 - 0.2*x + 0.3
 
@@ -151,11 +151,11 @@ def skew_double_well_gradient_1d(x):
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == 1, ''
+        assert x.shape[0] == 1, f'Expected x.shape[0] == 1, got {x.shape[0]}'
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == 1, ''
+        assert x.shape[1] == 1, f'Expected x.shape[1] == 1, got {x.shape[1]}'
 
     return 4 * x * (x**2 - 1) - 0.2
 
@@ -167,11 +167,11 @@ def triple_well_1d(x):
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
 
     return (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200
 
@@ -182,11 +182,11 @@ def triple_well_gradient_1d(x):
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == 1, ''
+        assert x.shape[0] == 1, f'Expected x.shape[0] == 1, got {x.shape[0]}'
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == 1, ''
+        assert x.shape[1] == 1, f'Expected x.shape[1] == 1, got {x.shape[1]}'
 
     return + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
 
@@ -204,11 +204,11 @@ def five_well_1d(x):
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
 
     return + (0.5 * x**6 - 15 * x**4 + 119 * x**2 + 28*x + 50) / 200 \
            - 0.6 * np.exp(-12.5 * (x + 2)**2 ) \
@@ -221,11 +221,11 @@ def five_well_gradient_1d(x):
 
     # array input
     if x.ndim == 1:
-        assert x.shape[0] == 1, ''
+        assert x.shape[0] == 1, f'Expected x.shape[0] == 1, got {x.shape[0]}'
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == 1, ''
+        assert x.shape[1] == 1, f'Expected x.shape[1] == 1, got {x.shape[1]}'
 
     return + (3 * x**5 - 60 * x**3 + 238 * x + 28) / 200 \
            - 15 * (x + 2) * np.exp(-12.5 *(x + 2)**2) \
@@ -242,13 +242,13 @@ def double_well_curved_2d(x):
 
     # array input
     elif x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         x = np.expand_dims(x, axis=0)
         is_array_input = True
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         is_array_input = False
 
     potential = (x[:, 0]**2 - 1) ** 2 + 2 *(x[:, 0]**2 + x[:, 1] - 1) ** 2
@@ -269,13 +269,13 @@ def double_well_curved_gradient_2d(x):
 
     # array input
     elif x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         x = np.expand_dims(x, axis=0)
         is_array_input = True
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         is_array_input = False
 
     partial_x = 4 * x[:, 0] * (x[:, 0]**2 - 1) + 8 * x[:, 1] *(x[:, 0]**2 + x[:, 1] - 1)
@@ -298,13 +298,13 @@ def triple_well_2d(x, alpha):
 
     # array input
     elif x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         x = np.expand_dims(x, axis=0)
         is_array_input = True
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         is_array_input = False
 
     potential = alpha * (
@@ -332,13 +332,13 @@ def triple_well_gradient_2d(x, alpha):
 
     # array input
     elif x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         x = np.expand_dims(x, axis=0)
         is_array_input = True
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         is_array_input = False
 
     partial_x = alpha * (
@@ -375,13 +375,13 @@ def mueller_brown_2d(x):
 
     # array input
     elif x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         x = np.expand_dims(x, axis=0)
         is_array_input = True
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         is_array_input = False
 
     A = [-200, -100, -170, 15]
@@ -422,13 +422,13 @@ def mueller_brown_gradient_2d(x):
 
     # array input
     elif x.ndim == 1:
-        assert x.shape[0] == d, ''
+        assert x.shape[0] == d, f'Expected x.shape[0] == {d}, got {x.shape[0]}'
         x = np.expand_dims(x, axis=0)
         is_array_input = True
 
     # batch input
     elif x.ndim == 2:
-        assert x.shape[1] == d, ''
+        assert x.shape[1] == d, f'Expected x.shape[1] == {d}, got {x.shape[1]}'
         is_array_input = False
 
     K = x.shape[0]

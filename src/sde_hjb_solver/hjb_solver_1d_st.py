@@ -146,7 +146,9 @@ class SolverHJB1D(object):
         float
             point in the domain
         '''
-        assert k in np.arange(self.sde.Nh), ''
+        assert k in np.arange(self.sde.Nh), (
+            f'k must be a valid node index in [0, {self.sde.Nh - 1}]'
+        )
 
         return self.sde.domain_h[k]
 
@@ -227,8 +229,12 @@ class SolverHJB1D(object):
         ''' this method computes by finite differences the optimal control
                 u_opt = - sigma d/dx phi
         '''
-        assert hasattr(self, 'value_function'), ''
-        assert self.value_function.ndim == self.sde.d, ''
+        assert hasattr(self, 'value_function'), (
+            'value_function must be computed before calling compute_optimal_control'
+        )
+        assert self.value_function.ndim == self.sde.d, (
+            f'value_function must have dimension {self.sde.d}'
+        )
 
         # central difference approximation
         # for any k in {1, ..., Nh-2}
@@ -282,7 +288,9 @@ class SolverHJB1D(object):
 
                     # if attribute exists check if they are the same
                     if hasattr(self.sde, attr_name):
-                        assert getattr(self.sde, attr_name) == attr
+                        assert getattr(self.sde, attr_name) == attr, (
+                            f'Loaded sde.{attr_name} does not match existing value'
+                        )
 
                     # if attribute does not exist save attribute
                     else:
@@ -293,7 +301,9 @@ class SolverHJB1D(object):
 
                     # if attribute exists check if they are the same
                     if hasattr(self, attr_name):
-                        assert getattr(self, attr_name) == attr
+                        assert getattr(self, attr_name) == attr, (
+                            f'Loaded {attr_name} does not match existing value'
+                        )
 
                     # if attribute does not exist save attribute
                     else:
@@ -317,7 +327,9 @@ class SolverHJB1D(object):
     def coarse_solution(self, h_coarse):
         ''' coarse solution'''
 
-        assert self.h <= h_coarse, ''
+        assert self.h <= h_coarse, (
+            f'h_coarse must be >= h (h={self.h}, h_coarse={h_coarse})'
+        )
 
         # discretization step ratio
         k = int(h_coarse / self.h)

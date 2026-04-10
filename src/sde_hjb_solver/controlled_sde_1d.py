@@ -50,8 +50,8 @@ class ControlledSDE1D(ControlledSDE):
     def get_index_vectorized(self, x):
         '''
         '''
-        assert x.ndim == 2, ''
-        assert x.shape[1] == self.d, ''
+        assert x.ndim == 2, 'x must be a 2D array of shape (N, d)'
+        assert x.shape[1] == self.d, f'Expected x.shape[1] == {self.d}, got {x.shape[1]}'
 
         # domain bounds
         lb, ub = self.domain[0], self.domain[1]

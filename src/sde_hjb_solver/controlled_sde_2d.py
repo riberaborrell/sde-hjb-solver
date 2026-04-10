@@ -65,8 +65,8 @@ class ControlledSDE2D(ControlledSDE):
     def get_index_vectorized(self, x):
         '''
         '''
-        assert x.ndim == 2, ''
-        assert x.shape[1] == self.d, ''
+        assert x.ndim == 2, 'x must be a 2D array of shape (N, d)'
+        assert x.shape[1] == self.d, f'Expected x.shape[1] == {self.d}, got {x.shape[1]}'
 
         # domain bounds
         lb, ub = self.domain[:, 0], self.domain[:, 1]
@@ -263,7 +263,7 @@ class BrownianMotionCommittor2D(BrownianMotion2D):
         self.name += 'committor'
 
         # target set (in radial coordinates)
-        assert radius_a < radius_b, ''
+        assert radius_a < radius_b, 'radius_a must be smaller than radius_b'
         self.radius_a = radius_a
         self.radius_b = radius_b
 

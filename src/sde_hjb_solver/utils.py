@@ -5,11 +5,10 @@ def get_time_in_hms(dt):
 
 def arange_generator(m):
     '''this method provides a generator as a alternative to the np.arange method'''
-    assert type(m) == int, ''
-    assert m >= 0, ''
+    assert type(m) == int, 'm must be an int'
+    assert m >= 0, 'm must be non-negative'
 
     n = 0
     while n < m:
         yield n
         n += 1
-

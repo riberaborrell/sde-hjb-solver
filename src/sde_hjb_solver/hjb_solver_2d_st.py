@@ -150,12 +150,14 @@ class SolverHJB2D(object):
         int
             flatten index of the node
         '''
-        assert type(idx) == tuple, ''
-        assert len(idx) == self.sde.d, ''
+        assert type(idx) == tuple, 'idx must be a tuple of axis indices'
+        assert len(idx) == self.sde.d, f'idx must have length {self.sde.d}'
 
         k = 0
         for i in range(self.sde.d):
-            assert 0 <= idx[i] <= self.sde.Nx[i] - 1, ''
+            assert 0 <= idx[i] <= self.sde.Nx[i] - 1, (
+                f'idx[{i}] must be in [0, {self.sde.Nx[i] - 1}]'
+            )
             Nx_prod = 1
             for j in range(i+1, self.sde.d):
                 Nx_prod *= self.sde.Nx[j]
@@ -178,7 +180,9 @@ class SolverHJB2D(object):
             bumpy index of the node
         '''
         #assert type(k) == int, ''
-        assert 0 <= k <= self.sde.Nh -1, ''
+        assert 0 <= k <= self.sde.Nh - 1, (
+            f'k must be in [0, {self.sde.Nh - 1}]'
+        )
 
         idx = [None for i in range(self.sde.d)]
         for i in range(self.sde.d):
@@ -202,7 +206,9 @@ class SolverHJB2D(object):
         float
             point in the domain
         '''
-        assert k in np.arange(self.sde.Nh), ''
+        assert k in np.arange(self.sde.Nh), (
+            f'k must be a valid node index in [0, {self.sde.Nh - 1}]'
+        )
 
         return self.sde.domain_h.reshape(self.sde.Nh, self.sde.d)[k]
 
@@ -340,8 +346,12 @@ class SolverHJB2D(object):
         ''' computes by finite differences the optimal control
                 u_opt = - sigma ∇ value_f
         '''
-        assert hasattr(self, 'value_function'), ''
-        assert self.value_function.ndim == self.sde.d, ''
+        assert hasattr(self, 'value_function'), (
+            'value_function must be computed before calling compute_optimal_control'
+        )
+        assert self.value_function.ndim == self.sde.d, (
+            f'value_function must have dimension {self.sde.d}'
+        )
 
         # diffusion term
         sigma = self.sde.diffusion
@@ -414,7 +424,9 @@ class SolverHJB2D(object):
 
                     # if attribute exists check if they are the same
                     if hasattr(self.sde, attr_name):
-                        assert getattr(self.sde, attr_name) == attr
+                        assert getattr(self.sde, attr_name) == attr, (
+                            f'Loaded sde.{attr_name} does not match existing value'
+                        )
 
                     # if attribute does not exist save attribute
                     else:
@@ -425,7 +437,9 @@ class SolverHJB2D(object):
 
                     # if attribute exists check if they are the same
                     if hasattr(self, attr_name):
-                        assert getattr(self, attr_name) == attr
+                        assert getattr(self, attr_name) == attr, (
+                            f'Loaded {attr_name} does not match existing value'
+                        )
 
                     # if attribute does not exist save attribute
                     else:
@@ -445,7 +459,9 @@ class SolverHJB2D(object):
     def coarse_solution(self, h_coarse):
         ''' coarse solution'''
 
-        assert self.h <= h_coarse, ''
+        assert self.h <= h_coarse, (
+            f'h_coarse must be >= h (h={self.h}, h_coarse={h_coarse})'
+        )
 
         # discretization step ratio
         k = int(h_coarse / self.h)
